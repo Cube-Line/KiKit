@@ -3,7 +3,8 @@ from pcbnew import EDA_ANGLE, DEGREES_T
 from kikit.common import KiAngle
 from kikit.panelize import (
     GridPlacerBase, BasicGridPosition, OddEvenRowsPosition,
-    OddEvenColumnPosition, OddEvenRowsColumnsPosition, prolongCut
+    OddEvenColumnPosition, OddEvenRowsColumnsPosition, prolongCut,
+    netClassesDefaultFirst
 )
 from shapely.geometry import LineString
 from math import sqrt
@@ -70,3 +71,23 @@ def test_prolongCut():
 
     assert prolonged.coords[0] == pytest.approx((sqrt(2)/2 * -0.5, sqrt(2)/2 * -0.5))
     assert prolonged.coords[1] == pytest.approx((1 + sqrt(2)/2 * 0.5, 1 + sqrt(2)/2 * 0.5))
+
+
+def test_netClassesDefaultFirst():
+    netClasses = [
+        {"name": "Default"},
+        {"name": "HV"},
+        {"name": "Board_0-Default"},
+        {"name": "Board_0-HV"},
+        {"name": "Board_1-Default"},
+        {"name": "Board_1-HV"},
+    ]
+
+    assert [x["name"] for x in netClassesDefaultFirst(netClasses)] == [
+        "Default",
+        "Board_0-Default",
+        "Board_1-Default",
+        "HV",
+        "Board_0-HV",
+        "Board_1-HV",
+    ]
