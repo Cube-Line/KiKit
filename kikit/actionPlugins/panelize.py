@@ -18,6 +18,127 @@ from itertools import chain
 
 PLATFORMS = ["Linux/MacOS", "Windows"]
 
+SECTION_DISPLAY = {
+    "Input": "输入",
+    "Output": "输出",
+    "Layout": "布局",
+    "Source": "源",
+    "Tabs": "连接条",
+    "Cuts": "切割",
+    "Framing": "框架",
+    "Tooling": "工具孔",
+    "Fiducials": "基准点",
+    "Text": "文本",
+    "Text2": "文本2",
+    "Text3": "文本3",
+    "Text4": "文本4",
+    "Copperfill": "铜填充",
+    "Page": "页面",
+    "Post": "后处理",
+    "Debug": "调试",
+}
+
+PARAM_DISPLAY = {
+    "Input file": "输入文件",
+    "Output file": "输出文件",
+    "type": "类型",
+    "alternation": "交替方式",
+    "hspace": "水平间距",
+    "vspace": "垂直间距",
+    "space": "间距",
+    "hevendiff": "偶数行额外间距",
+    "vevendiff": "偶数列额外间距",
+    "hbackbone": "水平中框",
+    "vbackbone": "垂直中框",
+    "hboneskip": "水平中框跳过",
+    "vboneskip": "垂直中框跳过",
+    "hbonefirst": "首个水平中框",
+    "vbonefirst": "首个垂直中框",
+    "rotation": "旋转",
+    "rows": "行数",
+    "cols": "列数",
+    "vbonecut": "垂直中框切口",
+    "hbonecut": "水平中框切口",
+    "renamenet": "网络重命名",
+    "renameref": "位号重命名",
+    "baketext": "烘焙文本",
+    "bakeref": "烘焙旧位号",
+    "code": "插件代码",
+    "arg": "插件参数",
+    "tolerance": "容差",
+    "tlx": "左上角 X",
+    "tly": "左上角 Y",
+    "brx": "右下角 X",
+    "bry": "右下角 Y",
+    "ref": "参考位号",
+    "layer": "层",
+    "stack": "层叠",
+    "vwidth": "垂直宽度",
+    "hwidth": "水平宽度",
+    "width": "宽度",
+    "mindistance": "最小间距",
+    "spacing": "间距",
+    "vcount": "垂直数量",
+    "hcount": "水平数量",
+    "cutout": "切出深度",
+    "patchcorners": "角补丁",
+    "tabfootprints": "连接条封装",
+    "fillet": "圆角",
+    "drill": "钻孔直径",
+    "offset": "偏移",
+    "prolong": "延长",
+    "clearance": "间距",
+    "cutcurves": "切割曲线",
+    "linewidth": "线宽",
+    "textthickness": "文本粗度",
+    "textsize": "文本大小",
+    "endprolongation": "末端延长",
+    "textprolongation": "文本侧延长",
+    "textoffset": "文本偏移",
+    "template": "模板",
+    "hoffset": "水平偏移",
+    "voffset": "垂直偏移",
+    "size": "尺寸",
+    "paste": "钢网层",
+    "soldermaskmargin": "阻焊边距",
+    "coppersize": "铜皮尺寸",
+    "opening": "开窗尺寸",
+    "hjustify": "水平对齐",
+    "vjustify": "垂直对齐",
+    "orientation": "方向",
+    "text": "文本",
+    "anchor": "锚点",
+    "plugin": "插件",
+    "edgeclearance": "边缘间距",
+    "diameter": "直径",
+    "threshold": "阈值",
+    "copperfill": "铜填充",
+    "millradius": "铣削半径",
+    "millradiusouter": "外部铣削半径",
+    "reconstructarcs": "重建圆弧",
+    "refillzones": "重新填充区域",
+    "script": "脚本",
+    "scriptarg": "脚本参数",
+    "origin": "原点",
+    "dimensions": "尺寸标注",
+    "edgewidth": "边缘线宽",
+    "posx": "X 位置",
+    "posy": "Y 位置",
+    "height": "高度",
+    "drawPartitionLines": "绘制分割线",
+    "drawBackboneLines": "绘制中框线",
+    "drawboxes": "绘制边界框",
+    "trace": "跟踪",
+    "drawtabfail": "Tab 构建失败可视化",
+    "deterministic": "确定性 ID",
+    "drawTabFillet": "绘制圆角调试几何",
+    "slotwidth": "槽宽",
+    "cuts": "切口",
+    "chamferwidth": "倒角宽度",
+    "chamferheight": "倒角高度",
+    "chamfer": "倒角",
+}
+
 class ExceptionThread(Thread):
     def run(self):
         self.exception = None
@@ -50,8 +171,8 @@ def presetDifferential(source, target):
 
 
 def transplateBoard(source, target, update=lambda x: None):
-    CLEAR_MSG = "Clearing the old board in UI"
-    RENDER_MSG = "Rendering the new board in UI"
+    CLEAR_MSG = "正在清除旧电路板"
+    RENDER_MSG = "正在渲染新电路板"
 
     target.ClearProject()
     target.DeleteAllFootprints()
@@ -108,7 +229,7 @@ def drawTemporaryNotification(board, sourceFilename):
 
     text = pcbnew.PCB_TEXT(board)
     text.SetLayer(pcbnew.Margin)
-    text.SetText(f"PREVIEW ONLY. PANEL SAVED IN {sourceFilename}")
+    text.SetText(f"仅预览。拼板已保存至 {sourceFilename}")
     text.SetPosition(pcbnew.VECTOR2I(bbox.GetX() + bbox.GetWidth() // 2, bbox.GetY() + bbox.GetHeight()) + pcbnew.VECTOR2I(0, fromMm(2)))
     text.SetTextThickness(fromMm(0.4))
     text.SetTextSize(pcbnew.VECTOR2I(fromMm(3), fromMm(3)))
@@ -129,21 +250,22 @@ class SFile():
 class SInputFile(SFile):
     def __init__(self, nameFilter):
         super().__init__(nameFilter)
-        self.description = "Input file"
+        self.description = "输入文件"
         self.isGuiRelevant = lambda section: True
 
 class SOuputFile(SFile):
     def __init__(self, nameFilter):
         super().__init__(nameFilter)
-        self.description = "Output file"
+        self.description = "输出文件"
         self.isGuiRelevant = lambda section: True
 
 class ParameterWidgetBase:
     def __init__(self, parent, name, parameter):
         self.name = name
         self.parameter = parameter
+        displayName = PARAM_DISPLAY.get(name, name)
         self.label = wx.StaticText(parent,
-                                   label=name,
+                                   label=displayName,
                                    size=wx.Size(150, -1),
                                    style=wx.ALIGN_RIGHT)
         self.label.SetToolTip(parameter.description)
@@ -235,8 +357,9 @@ class SectionGui():
     def __init__(self, parent, name, section, onResize, onChange):
         self.name = name
         self.parent = parent
+        displayName = SECTION_DISPLAY.get(name, name)
         self.container = wx.CollapsiblePane(
-            parent, wx.ID_ANY, name, wx.DefaultPosition, wx.DefaultSize,
+            parent, wx.ID_ANY, displayName, wx.DefaultPosition, wx.DefaultSize,
             wx.CP_DEFAULT_STYLE)
         self.container.Collapse(False)
 
@@ -296,7 +419,7 @@ class SectionGui():
 class PanelizeDialog(wx.Dialog):
     def __init__(self, parent=None, board=None, preset=None):
         wx.Dialog.__init__(
-            self, parent, title=f'Panelize a board  (version {kikit.__version__})',
+            self, parent, title=f'拼板 (版本 {kikit.__version__})',
             style=wx.DEFAULT_DIALOG_STYLE)
         self.Bind(wx.EVT_CLOSE, self.OnClose, id=self.GetId())
 
@@ -339,7 +462,7 @@ class PanelizeDialog(wx.Dialog):
     def _buildOutputSections(self, sizer):
         internalSizer = wx.BoxSizer(wx.VERTICAL)
 
-        cliLabel = wx.StaticText(self, label="KiKit CLI command:",
+        cliLabel = wx.StaticText(self, label="KiKit CLI 命令：",
                                  size=wx.DefaultSize, style=wx.ALIGN_LEFT)
         internalSizer.Add(cliLabel, 0, wx.EXPAND | wx.ALL, 2)
 
@@ -353,7 +476,7 @@ class PanelizeDialog(wx.Dialog):
         internalSizer.Add(self.platformSelector, 0, wx.EXPAND | wx.ALL, 2 )
 
         self.kikitCmdWidget = wx.TextCtrl(
-            self, wx.ID_ANY, "KiKit Command", wx.DefaultPosition, wx.DefaultSize,
+            self, wx.ID_ANY, "KiKit 命令", wx.DefaultPosition, wx.DefaultSize,
             wx.TE_MULTILINE | wx.TE_READONLY)
         self.kikitCmdWidget.SetSizeHints(
             wx.Size(self.maxDialogSize.width,
@@ -364,7 +487,7 @@ class PanelizeDialog(wx.Dialog):
         self.kikitCmdWidget.SetFont(cmdFont)
         internalSizer.Add(self.kikitCmdWidget, 0, wx.EXPAND | wx.ALL, 2)
 
-        jsonLabel = wx.StaticText(self, label="KiKit JSON preset (contains only changed keys):",
+        jsonLabel = wx.StaticText(self, label="KiKit JSON 配置（仅包含已变更的键）：",
                                   size=wx.DefaultSize, style=wx.ALIGN_LEFT)
         internalSizer.Add(jsonLabel, 0, wx.EXPAND | wx.ALL, 2)
 
@@ -383,7 +506,7 @@ class PanelizeDialog(wx.Dialog):
         ieButtonsSizer = wx.BoxSizer(wx.HORIZONTAL)
         ieButtonsSizer.Add((0, 0), 1, wx.EXPAND, 5)
 
-        self.importButton = wx.Button(self, wx.ID_ANY, u"Import JSON configuration",
+        self.importButton = wx.Button(self, wx.ID_ANY, u"导入 JSON 配置",
             wx.DefaultPosition, wx.DefaultSize, 0)
         try:
             self.importButton.SetBitmap(wx.BitmapBundle(wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN)))
@@ -392,7 +515,7 @@ class PanelizeDialog(wx.Dialog):
         ieButtonsSizer.Add(self.importButton, 0, wx.ALL, 5)
         self.importButton.Bind(wx.EVT_BUTTON, self.onImport)
 
-        self.exportButton = wx.Button(self, wx.ID_ANY, u"Export JSON configuration",
+        self.exportButton = wx.Button(self, wx.ID_ANY, u"导出 JSON 配置",
             wx.DefaultPosition, wx.DefaultSize, 0)
         try:
             self.exportButton.SetBitmap(wx.BitmapBundle(wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE)))
@@ -430,10 +553,10 @@ class PanelizeDialog(wx.Dialog):
 
     def _buildBottomButtons(self, parentSizer):
         button_box = wx.BoxSizer(wx.HORIZONTAL)
-        closeButton = wx.Button(self, label='Close')
+        closeButton = wx.Button(self, label='关闭')
         self.Bind(wx.EVT_BUTTON, self.OnClose, id=closeButton.GetId())
         button_box.Add(closeButton, 1, wx.RIGHT, 10)
-        self.okButton = wx.Button(self, label='Panelize')
+        self.okButton = wx.Button(self, label='拼板')
         self.Bind(wx.EVT_BUTTON, self.OnPanelize, id=self.okButton.GetId())
         button_box.Add(self.okButton, 1)
 
@@ -457,7 +580,7 @@ class PanelizeDialog(wx.Dialog):
         if now - self.lastPulse > 1 / 50 or force:
             self.lastPulse = now
             if self.progressDlg is not None:
-                self.progressDlg.Pulse(newmsg=f"Running KiKit: {self.phase}")
+                self.progressDlg.Pulse(newmsg=f"正在运行 KiKit：{self.phase}")
             if force:
                 self.progressDlg.Refresh()
             wx.GetApp().Yield()
@@ -482,16 +605,16 @@ class PanelizeDialog(wx.Dialog):
     def _pulseWhilePcbnewRefresh(self):
         while not self.refreshDone:
             time.sleep(1/50)
-            self._updatePanelizationProgress("Pcbnew is updating the preview")
+            self._updatePanelizationProgress("Pcbnew 正在更新预览")
 
 
     def OnPanelize(self, event):
         with tempfile.TemporaryDirectory(prefix="kikit") as dirname:
             try:
                 self.progressDlg = wx.ProgressDialog(
-                    "Running kikit", f"Running KiKit:",
+                    "正在运行 KiKit", "正在运行 KiKit：",
                     parent=self)
-                self._updatePanelizationProgress("Starting up")
+                self._updatePanelizationProgress("正在启动")
                 self.progressDlg.Show()
 
                 args = self.kikitArgs()
@@ -499,23 +622,23 @@ class PanelizeDialog(wx.Dialog):
                 input = self.sections["Input"].items["Input file"].getValue()
                 if len(input) == 0:
                     dlg = wx.MessageDialog(
-                        None, f"No input file specified", "Error", wx.OK)
+                        None, "未指定输入文件", "错误", wx.OK)
                     dlg.ShowModal()
                     dlg.Destroy()
                     return
                 panelFile = self.sections["Output"].items["Output file"].getValue()
                 if len(panelFile) == 0:
                     dlg = wx.MessageDialog(
-                        None, f"No output file specified", "Error", wx.OK)
+                        None, "未指定输出文件", "错误", wx.OK)
                     dlg.ShowModal()
                     dlg.Destroy()
                     return
                 if os.path.realpath(input) == os.path.realpath(pcbnew.GetBoard().GetFileName()):
                     dlg = wx.MessageDialog(
                         None,
-                        f"The file {input} is the same as currently opened board. Cannot continue.\n\n" + \
-                         "Please, run the panelization tool when no board is opened in pcbnew.",
-                        "Error", wx.OK)
+                        f"文件 {input} 与当前打开的电路板相同，无法继续。\n\n" + \
+                         "请在没有电路板打开时运行拼板工具。",
+                        "错误", wx.OK)
                     dlg.ShowModal()
                     dlg.Destroy()
                     return
@@ -527,7 +650,7 @@ class PanelizeDialog(wx.Dialog):
                 thread.daemon = True
                 thread.start()
                 while True:
-                    self._updatePanelizationProgress("Panelization")
+                    self._updatePanelizationProgress("拼板中")
                     thread.join(timeout=1 / 50)
                     if not thread.is_alive():
                         break
@@ -538,13 +661,13 @@ class PanelizeDialog(wx.Dialog):
                 # in the main thread
                 transplateBoard(self.temporary_panel, self.board, self._updatePanelizationProgress)
                 drawTemporaryNotification(self.board, panelFile)
-                self._updatePanelizationProgress("Pcbnew will now refresh panel, the UI might freeze", force=True)
+                self._updatePanelizationProgress("Pcbnew 即将刷新拼板，界面可能会卡顿", force=True)
                 pcbnew.Refresh()
-                self._updatePanelizationProgress("Done", force=True)
+                self._updatePanelizationProgress("完成", force=True)
                 self.dirty = True
             except Exception as e:
                 dlg = wx.MessageDialog(
-                    None, f"Cannot perform:\n\n{e}", "Error", wx.OK)
+                    None, f"无法执行：\n\n{e}", "错误", wx.OK)
                 dlg.ShowModal()
                 dlg.Destroy()
             finally:
@@ -659,7 +782,7 @@ class PanelizeDialog(wx.Dialog):
         return args
 
     def onExport(self, evt):
-        with wx.FileDialog(self, "Export configuration", wildcard="KiKit configurations (*.json)|*.json",
+        with wx.FileDialog(self, "导出配置", wildcard="KiKit 配置 (*.json)|*.json",
                 style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -672,14 +795,14 @@ class PanelizeDialog(wx.Dialog):
                 presetUpdates = presetDifferential(defaultPreset, preset)
                 with open(pathname, "w", encoding="utf-8") as file:
                     json.dump(presetUpdates, file, indent=4)
-                wx.MessageBox(f"Configuration exported to {pathname}", "Success",
+                wx.MessageBox(f"配置已导出至 {pathname}", "成功",
                     style=wx.OK | wx.ICON_INFORMATION, parent=self)
             except IOError as e:
-                wx.MessageBox(f"Cannot export to file {pathname}: {e}", "Error",
+                wx.MessageBox(f"无法导出至文件 {pathname}：{e}", "错误",
                     style=wx.OK | wx.ICON_ERROR, parent=self)
 
     def onImport(self, evt):
-        with wx.FileDialog(self, "Open KiKit configuration", wildcard="KiKit configurations (*.json)|*.json",
+        with wx.FileDialog(self, "打开 KiKit 配置", wildcard="KiKit 配置 (*.json)|*.json",
                        style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -691,7 +814,7 @@ class PanelizeDialog(wx.Dialog):
                     self.populateInitialValue(preset)
                     self.OnChange()
             except Exception as e:
-                wx.MessageBox(f"Cannot load configuration: {e}", "Error",
+                wx.MessageBox(f"无法加载配置：{e}", "错误",
                     style=wx.OK | wx.ICON_ERROR, parent=self)
 
 
@@ -702,9 +825,9 @@ class PanelizePlugin(pcbnew.ActionPlugin):
         self.dirty = False
 
     def defaults(self):
-        self.name = "KiKit: Panelize PCB"
+        self.name = "KiKit：拼板"
         self.category = "KiKit"
-        self.description = "Create a panel"
+        self.description = "创建拼板"
         self.icon_file_name = os.path.join(PKG_BASE, "resources", "graphics", "panelizeIcon_24x24.png")
         self.show_toolbar_button = True
 
@@ -714,10 +837,9 @@ class PanelizePlugin(pcbnew.ActionPlugin):
             if not self.dirty and not pcbnew.GetBoard().IsEmpty():
                 dlg = wx.MessageDialog(
                     None,
-                    "The currently opened board is not empty and it will be " + \
-                    "replaced by the panel. Do you wish to continue?\n\n" + \
-                    "Note that the panelization tool is supposed to be invoked from a stand-alone pcbnew instance.",
-                    "Confirm",
+                    "当前打开的电路板不为空，将被拼板替换。是否继续？\n\n" + \
+                    "请注意，拼板工具应在独立的 pcbnew 实例中运行。",
+                    "确认",
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 ret = dlg.ShowModal()
                 dlg.Destroy()
@@ -729,7 +851,7 @@ class PanelizePlugin(pcbnew.ActionPlugin):
             self.dirty = self.dirty or dialog.dirty
         except Exception as e:
             dlg = wx.MessageDialog(
-                None, f"Cannot perform: {e}", "Error", wx.OK)
+                None, f"无法执行：{e}", "错误", wx.OK)
             dlg.ShowModal()
             dlg.Destroy()
         finally:

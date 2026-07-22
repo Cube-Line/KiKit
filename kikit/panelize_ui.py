@@ -44,7 +44,7 @@ class Section(click.ParamType):
 
     def convert(self, value, param, ctx):
         if len(value.strip()) == 0:
-            self.fail(f"{value} is not a valid argument specification",
+            self.fail(f"{value} 不是有效的参数规格",
                 param, ctx)
         try:
             values = {}
@@ -59,7 +59,7 @@ class Section(click.ParamType):
                 values[key] = value
             return values
         except (TypeError, IndexError):
-            self.fail(f"'{pair}' is not a valid key: value pair",
+            self.fail(f"'{pair}' 不是有效的键: 值对",
                 param,
                 ctx)
 
@@ -74,7 +74,7 @@ class HookPlugin(click.ParamType):
         pieces = value.split(":", maxsplit=1)
         specPieces = pieces[0].rsplit(".", maxsplit=1)
         if len(specPieces) < 2:
-            self.fail(f"{value} is not a valid plugin specification")
+            self.fail(f"{value} 不是有效的插件规格")
         module = specPieces[0]
         pluginName = specPieces[1]
         arg = "" if len(pieces) == 2 else pieces[1]
@@ -143,63 +143,63 @@ def completeSection(section):
 @click.argument("output", type=click.Path(dir_okay=False),
     **addCompatibleShellCompletion(pathCompletion(".kicad_pcb")))
 @click.option("--preset", "-p", multiple=True,
-    help="A panelization preset file; use prefix ':' for built-in styles.",
+    help="拼板预设文件；使用前缀 ':' 选择内置样式。",
     **addCompatibleShellCompletion(completePreset))
 @click.option("--plugin", multiple=True, type=HookPlugin(),
-    help="A hook plugin to use during the panelization",
+    help="拼板过程中使用的钩子插件",
     **addCompatibleShellCompletion(completePreset))
 @click.option("--layout", "-l", type=Section(),
-    help="Override layout settings.",
+    help="覆盖布局设置。",
     **addCompatibleShellCompletion(completeSection(LAYOUT_SECTION)))
 @click.option("--source", "-s", type=Section(),
-    help="Override source settings.",
+    help="覆盖源设置。",
     **addCompatibleShellCompletion(completeSection(SOURCE_SECTION)))
 @click.option("--tabs", "-t", type=Section(),
-    help="Override tab settings.",
+    help="覆盖标签设置。",
     **addCompatibleShellCompletion(completeSection(TABS_SECTION)))
 @click.option("--cuts", "-c", type=Section(),
-    help="Override cut settings.",
+    help="覆盖切割设置。",
     **addCompatibleShellCompletion(completeSection(CUTS_SECTION)))
 @click.option("--framing", "-r", type=Section(),
-    help="Override framing settings.",
+    help="覆盖边框设置。",
     **addCompatibleShellCompletion(completeSection(FRAMING_SECTION)))
 @click.option("--tooling", "-o", type=Section(),
-    help="Override tooling settings.",
+    help="覆盖工具孔设置。",
     **addCompatibleShellCompletion(completeSection(TOOLING_SECTION)))
 @click.option("--fiducials", "-f", type=Section(),
-    help="Override fiducials settings.",
+    help="覆盖基准点设置。",
     **addCompatibleShellCompletion(completeSection(FIDUCIALS_SECTION)))
 @click.option("--text", type=Section(),
-    help="Override text settings.",
+    help="覆盖文本设置。",
     **addCompatibleShellCompletion(completeSection(TEXT_SECTION)))
 @click.option("--text2", type=Section(),
-    help="Override text settings.",
+    help="覆盖文本设置。",
     **addCompatibleShellCompletion(completeSection(TEXT_SECTION)))
 @click.option("--text3", type=Section(),
-    help="Override text settings.",
+    help="覆盖文本设置。",
     **addCompatibleShellCompletion(completeSection(TEXT_SECTION)))
 @click.option("--text4", type=Section(),
-    help="Override text settings.",
+    help="覆盖文本设置。",
     **addCompatibleShellCompletion(completeSection(TEXT_SECTION)))
 @click.option("--copperfill", "-u", type=Section(),
-    help="Override copper fill settings.",
+    help="覆盖铜填充设置。",
     **addCompatibleShellCompletion(completeSection(COPPERFILL_SECTION)))
 @click.option("--page", "-P", type=Section(),
-    help="Override page settings.",
+    help="覆盖页面设置。",
     **addCompatibleShellCompletion(completeSection(POST_SECTION)))
 @click.option("--post", "-z", type=Section(),
-    help="Override post processing settings.",
+    help="覆盖后处理设置。",
     **addCompatibleShellCompletion(completeSection(POST_SECTION)))
 @click.option("--debug", type=Section(),
-    help="Include debug traces or drawings in the panel.",
+    help="在拼板中包含调试轨迹或绘图。",
     **addCompatibleShellCompletion(completeSection(DEBUG_SECTION)))
 @click.option("--dump", "-d", type=click.Path(file_okay=True, dir_okay=False),
-    help="Dump constructured preset into a JSON file.")
+    help="将构建的预设转储到 JSON 文件。")
 def panelize(input, output, preset, plugin, layout, source, tabs, cuts, framing,
              tooling, fiducials, text, text2, text3, text4, copperfill, page,
              post, debug, dump):
     """
-    Panelize boards
+    拼板
     """
     try:
         # Hide the import in the function to make KiKit start faster
@@ -225,8 +225,8 @@ def panelize(input, output, preset, plugin, layout, source, tabs, cuts, framing,
         if isinstance(e, NonFatalErrors):
             sys.stderr.write(str(e) + "\n")
         else:
-            sys.stderr.write("An error occurred: " + str(e) + "\n")
-            sys.stderr.write("No output files produced\n")
+            sys.stderr.write("发生错误：" + str(e) + "\n")
+            sys.stderr.write("未生成输出文件\n")
         if isinstance(preset, dict) and preset["debug"]["trace"]:
             traceback.print_exc(file=sys.stderr)
         sys.exit(1)
@@ -250,7 +250,7 @@ def doPanelization(input, output, preset, plugins=[]):
     if preset["debug"]["deterministic"]:
         pcbnew.KIID.SeedGenerator(42)
     if board is None:
-        raise PanelError(f"Cannot load board {input}. Check if the path is correct or if you have permissions to read it.")
+        raise PanelError(f"无法加载电路板 {input}。请检查路径是否正确以及是否有读取权限。")
     panel = Panel(output)
 
     useHookPlugins = ki.loadHookPlugins(plugins, board, preset)
@@ -320,23 +320,23 @@ def doPanelization(input, output, preset, plugins=[]):
 @click.argument("input", type=click.Path(dir_okay=False))
 @click.argument("output", type=click.Path(dir_okay=False))
 @click.option("--source", "-s", type=Section(),
-    help="Specify source settings.")
+    help="指定源设置。")
 @click.option("--page", "-P", type=Section(),
-    help="Override page settings.",
+    help="覆盖页面设置。",
     **addCompatibleShellCompletion(completeSection(POST_SECTION)))
 @click.option("--debug", type=Section(),
-    help="Include debug traces or drawings in the panel.")
+    help="在拼板中包含调试轨迹或绘图。")
 @click.option("--keepAnnotations/--stripAnnotations", default=True,
-    help="Do not strip annotations" )
+    help="保留注释" )
 @click.option("--preserveArcs/--looseArcs", default=True,
-    help="Preserve arcs in the files" )
+    help="保留文件中的弧形" )
 def separate(input, output, source, page, debug, keepannotations, preservearcs):
     """
-    Separate a single board out of a multi-board design. The separated board is
-    placed in the middle of the sheet.
+    从多板设计中分离出单个电路板。分离后的电路板
+    将放置在图纸中央。
 
-    You can specify the board via bounding box or annotation. See documentation
-    for further details on usage.
+    您可以通过边界框或注释指定电路板。有关使用
+    的更多详细信息，请参阅文档。
     """
     try:
         from kikit import panelize_ui_impl as ki
@@ -375,8 +375,8 @@ def separate(input, output, source, page, debug, keepannotations, preservearcs):
             raise NonFatalErrors(panel.errors)
     except Exception as e:
         import sys
-        sys.stderr.write("An error occurred: " + str(e) + "\n")
-        sys.stderr.write("No output files produced\n")
+        sys.stderr.write("发生错误：" + str(e) + "\n")
+        sys.stderr.write("未生成输出文件\n")
         if isinstance(preset, dict) and preset["debug"]["trace"]:
             traceback.print_exc(file=sys.stderr)
         sys.exit(1)

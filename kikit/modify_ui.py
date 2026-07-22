@@ -2,11 +2,11 @@ import click
 
 @click.command()
 @click.argument("board", type=click.Path(dir_okay=False, exists=True))
-@click.option("--show/--hide", "-s", help="Show/hide references matching a pattern")
-@click.option("--pattern", "-p", type=str, help="Regular expression for references")
+@click.option("--show/--hide", "-s", help="显示/隐藏匹配模式的位号")
+@click.option("--pattern", "-p", type=str, help="位号的正则表达式")
 def references(board, show, pattern):
     """
-    Show or hide references on the board matching a pattern.
+    显示或隐藏电路板上匹配模式的位号。
     """
     from kikit import modify
     from kikit.common import fakeKiCADGui
@@ -18,11 +18,11 @@ def references(board, show, pattern):
 
 @click.command()
 @click.argument("board", type=click.Path(dir_okay=False, exists=True))
-@click.option("--show/--hide", "-s", help="Show/hide values matching a pattern")
-@click.option("--pattern", "-p", type=str, help="Regular expression for values")
+@click.option("--show/--hide", "-s", help="显示/隐藏匹配模式的数值")
+@click.option("--pattern", "-p", type=str, help="数值的正则表达式")
 def values(board, show, pattern):
     """
-    Show or hide values on the board matching a pattern.
+    显示或隐藏电路板上匹配模式的数值。
     """
     from kikit import modify
     from kikit.common import fakeKiCADGui
@@ -35,7 +35,7 @@ def values(board, show, pattern):
 @click.group()
 def modify():
     """
-    Modify board items
+    修改电路板项目
     """
     pass
 

@@ -6,35 +6,35 @@ from .common import execute_with_debug
 
 def fabCommand(f):
     """
-    A decorator to add the same functionality to all fab commands
+    为所有制造命令添加相同功能的装饰器
     """
     # Note that the decorators has to be specified in a reverse order
     f = click.argument("outputdir", type=click.Path(file_okay=False))(f)
     f = click.argument("board", type=click.Path(dir_okay=False))(f)
 
     f = click.option('--drc/--no-drc', is_flag=True, default=True,
-        help="Run DRC check before building the output.")(f)
+        help="在生成输出前运行 DRC 检查。")(f)
     f = click.option("--nametemplate", default="{}",
-        help="Template for naming the output files.")(f)
+        help="输出文件命名模板。")(f)
     f = click.option("--debug", is_flag=True, default=False,
-        help="Print extra debugging information")(f)
+        help="打印额外的调试信息")(f)
     return f
 
 @click.command()
 @fabCommand
-@click.option("--assembly/--no-assembly", help="Generate files for SMT assembly (schematics is required)")
-@click.option("--schematic", type=click.Path(dir_okay=False), help="Board schematics (required for assembly files)")
-@click.option("--ignore", type=str, default="", help="Comma separated list of designators to exclude from SMT assembly")
+@click.option("--assembly/--no-assembly", help="生成 SMT 贴片文件（需要原理图）")
+@click.option("--schematic", type=click.Path(dir_okay=False), help="电路板原理图（贴片文件必需）")
+@click.option("--ignore", type=str, default="", help="要从 SMT 贴片中排除的位号列表（逗号分隔）")
 @click.option("--field", type=str, default="LCSC",
-    help="Comma separated list of component fields field with LCSC order code. First existing field is used")
+    help="包含 LCSC 订购代码的元件字段列表（逗号分隔）。使用首个存在的字段")
 @click.option("--corrections", type=str, default="JLCPCB_CORRECTION",
-    help="Comma separated list of component fields with the correction value. First existing field is used")
+    help="包含修正值的元件字段列表（逗号分隔）。使用首个存在的字段")
 @click.option("--correctionpatterns", type=click.Path(dir_okay=False))
-@click.option("--missingError/--missingWarn", help="If a non-ignored component misses LCSC field, fail")
-@click.option("--autoname/--no-autoname", is_flag=True, help="Automatically name the output files based on the board name")
+@click.option("--missingError/--missingWarn", help="如果非忽略元件缺少 LCSC 字段，则报错")
+@click.option("--autoname/--no-autoname", is_flag=True, help="基于电路板名称自动命名输出文件")
 def jlcpcb(**kwargs):
     """
-    Prepare fabrication files for JLCPCB including their assembly service
+    为 JLCPCB 准备制造文件，包括其贴片服务
     """
     from kikit.fab import jlcpcb
     from kikit.common import fakeKiCADGui
@@ -43,30 +43,30 @@ def jlcpcb(**kwargs):
 
 @click.command()
 @fabCommand
-@click.option("--assembly/--no-assembly", help="Generate files for SMT assembly (schematics is required)")
-@click.option("--schematic", type=click.Path(dir_okay=False), help="Board schematics (required for assembly files)")
-@click.option("--ignore", type=str, default="", help="Comma separated list of designators to exclude from SMT assembly")
+@click.option("--assembly/--no-assembly", help="生成 SMT 贴片文件（需要原理图）")
+@click.option("--schematic", type=click.Path(dir_okay=False), help="电路板原理图（贴片文件必需）")
+@click.option("--ignore", type=str, default="", help="要从 SMT 贴片中排除的位号列表（逗号分隔）")
 @click.option("--corrections", type=str, default="PCBWAY_CORRECTION",
-    help="Comma separated list of component fields with the correction value. First existing field is used")
+    help="包含修正值的元件字段列表（逗号分隔）。使用首个存在的字段")
 @click.option("--correctionpatterns", type=click.Path(dir_okay=False))
 @click.option("--manufacturer", type=str, default="Manufacturer",
-    help="Comma separated list of fields to extract manufacturer name from. First existing field is used.")
+    help="提取制造商名称的字段列表（逗号分隔）。使用首个存在的字段。")
 @click.option("--partNumber", type=str, default="PartNumber",
-    help="Comma separated list of fields to extract part number from. First existing field is used.")
+    help="提取料号的字段列表（逗号分隔）。使用首个存在的字段。")
 @click.option("--description", type=str, default="Description",
-    help="Comma separated list of fields to extract description from. First existing field is used.")
+    help="提取描述的字段列表（逗号分隔）。使用首个存在的字段。")
 @click.option("--notes", type=str, default="Notes",
-    help="Comma separated list of fields to extract notes from. First existing field is used.")
+    help="提取备注的字段列表（逗号分隔）。使用首个存在的字段。")
 @click.option("--solderType", type=str, default="Type",
-    help="Comma separated list of fields to extract solder type from. First existing field is used.")
+    help="提取焊接类型的字段列表（逗号分隔）。使用首个存在的字段。")
 @click.option("--footprint", type=str, default="FootprintPCBWay",
-    help="Comma separated list of fields to extract the footprint name for the BOM. First existing field is used, otherwise the footprint library name.")
+    help="为 BOM 提取封装名称的字段列表（逗号分隔）。使用首个存在的字段，否则使用封装库名称。")
 @click.option("--nBoards", type=int, default=1,
-    help="Number of boards per panel (default 1).")
-@click.option("--missingError/--missingWarn", help="If a non-ignored component misses Manufacturer / PartNumber field, fail")
+    help="每拼板的电路板数量（默认为 1）。")
+@click.option("--missingError/--missingWarn", help="如果非忽略元件缺少制造商/料号字段，则报错")
 def pcbway(**kwargs):
     """
-    Prepare fabrication files for PCBWAY including their assembly service
+    为 PCBWAY 准备制造文件，包括其贴片服务
     """
     from kikit.fab import pcbway
     from kikit.common import fakeKiCADGui
@@ -78,7 +78,7 @@ def pcbway(**kwargs):
 @fabCommand
 def oshpark(**kwargs):
     """
-    Prepare fabrication files for OSH Park
+    为 OSH Park 准备制造文件
     """
     from kikit.fab import oshpark
     from kikit.common import fakeKiCADGui
@@ -87,14 +87,14 @@ def oshpark(**kwargs):
 
 @click.command()
 @fabCommand
-@click.option("--schematic", type=click.Path(dir_okay=False), help="Board schematics (required for assembly files)")
-@click.option("--ignore", type=str, default="", help="Comma separated list of designators to exclude from SMT assembly")
+@click.option("--schematic", type=click.Path(dir_okay=False), help="电路板原理图（贴片文件必需）")
+@click.option("--ignore", type=str, default="", help="要从 SMT 贴片中排除的位号列表（逗号分隔）")
 @click.option("--corrections", type=str, default="YY1_CORRECTION",
-    help="Comma separated list of component fields with the correction value. First existing field is used")
+    help="包含修正值的元件字段列表（逗号分隔）。使用首个存在的字段")
 @click.option("--correctionpatterns", type=click.Path(dir_okay=False))
 def neodenyy1(**kwargs):
     """
-    Prepare fabrication files for Neoden YY1
+    为 Neoden YY1 贴片机准备制造文件
     """
     from kikit.fab import neodenyy1
     from kikit.common import fakeKiCADGui
@@ -105,7 +105,7 @@ def neodenyy1(**kwargs):
 @fabCommand
 def openpnp(**kwargs):
     """
-    Prepare fabrication files for OpenPnP
+    为 OpenPnP 准备制造文件
     """
     from kikit.fab import openpnp
     from kikit.common import fakeKiCADGui
@@ -115,7 +115,7 @@ def openpnp(**kwargs):
 @click.group()
 def fab():
     """
-    Export complete manufacturing data for given fabrication houses
+    为指定的制造厂导出完整的制造数据
     """
     pass
 

@@ -23,7 +23,7 @@ class EnumType(click.Choice):
 @click.group()
 def drc():
     """
-    Validate design rules of the board
+    验证电路板的设计规则
     """
     pass
 
@@ -31,17 +31,16 @@ def drc():
 @click.argument("boardfile", type=click.Path(dir_okay=False))
 @click.option("--useMm/--useInch", default=True)
 @click.option("--strict/--weak", default=False,
-    help="Check all track errors")
+    help="检查所有走线错误")
 @click.option("--ignoreExcluded/--reportExcluded", default=True,
-    help="Report items that are excluded")
+    help="报告已排除的项目")
 @click.option("--level", type=EnumType(ReportLevel), default=ReportLevel.error,
-    help="Minimum severity to report")
+    help="最低报告严重级别")
 def run(boardfile, usemm, ignoreexcluded, strict, level):
     """
-    Check DRC rules. If no rules are validated, the process exists with code 0.
+    检查 DRC 规则。如果没有规则验证失败，进程退出码为 0。
 
-    If any errors are detected, the process exists with non-zero return code and
-    prints DRC report on the standard output.
+    如果检测到任何错误，进程以非零退出码退出，并在标准输出上打印 DRC 报告。
     """
     from kikit.drc import runImpl
     import sys
@@ -53,13 +52,13 @@ def run(boardfile, usemm, ignoreexcluded, strict, level):
         board = pcbnew.LoadBoard(boardfile)
         failed = runImpl(board, usemm, ignoreexcluded, strict, level, lambda x: print(x))
         if not failed:
-            print("No DRC errors found.")
+            print("未发现 DRC 错误。")
         else:
-            print("Found some DRC violations. See the report above.")
+            print("发现 DRC 违规。请参阅上面的报告。")
         sys.exit(failed)
     except Exception as e:
         raise e
-        sys.stderr.write("An error occurred: " + str(e) + "\n")
+        sys.stderr.write("发生错误：" + str(e) + "\n")
         sys.exit(1)
 
 drc.add_command(run)

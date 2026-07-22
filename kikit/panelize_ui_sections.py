@@ -258,80 +258,80 @@ LAYOUT_SECTION = {
     "type": SChoice(
         ["grid", "plugin"],
         always(),
-        "Layout type"),
+        "布局类型"),
     "alternation": SChoice(
         ["none", "rows", "cols", "rowsCols"],
         typeIn(["grid", "plugin"]),
-        "Specify alternations of board rotation"),
+        "指定电路板旋转交替方式"),
     "hspace": SLength(
         always(),
-        "Specify horizontal gap between the boards"),
+        "指定电路板之间的水平间距"),
     "vspace": SLength(
         always(),
-        "Specify vertical gap between the boards"),
+        "指定电路板之间的垂直间距"),
     "space": SLength(
         never(),
-        "Specify the gap between the boards in both direction"),
+        "指定电路板之间的双向间距"),
     "hevendiff": SLength(
         always(),
-        "Extra spacing added to even spaces between boards columns"),
+        "偶数行电路板列之间的额外间距"),
     "vevendiff": SLength(
         always(),
-        "Extra spacing added to even spaces between boards rows"),
+        "偶数列电路板行之间的额外间距"),
     "hbackbone": SLength(
         typeIn(["grid", "plugin"]),
-        "The width of horizontal backbone (0 means no backbone)"),
+        "水平中框宽度（0 表示无中框）"),
     "vbackbone": SLength(
         typeIn(["grid", "plugin"]),
-        "The width of vertical backbone (0 means no backbone)"),
+        "垂直中框宽度（0 表示无中框）"),
     "hboneskip": SNaturalNum(
         typeIn(["grid", "plugin"]),
-        "Skip every given number of horizontal backbones"),
+        "每隔指定数量跳过水平中框"),
     "vboneskip": SNaturalNum(
         typeIn(["grid", "plugin"]),
-        "Skip every given number of vertical backbones"),
+        "每隔指定数量跳过垂直中框"),
     "hbonefirst": SNaturalNum(
         typeIn(["grid", "plugin"]),
-        "Specify first horizontal backbone to render"),
+        "指定要渲染的第一个水平中框"),
     "vbonefirst": SNaturalNum(
         typeIn(["grid", "plugin"]),
-        "Specify first vertical backbone to render"),
+        "指定要渲染的第一个垂直中框"),
     "rotation": SAngle(
         always(),
-        "Rotate the boards before placing them in the panel"),
+        "放入拼板前旋转电路板"),
     "rows": SNaturalNum(
         typeIn(["grid", "plugin"]),
-        "Specify the number of rows in the grid pattern"),
+        "指定网格布局的行数"),
     "cols": SNaturalNum(
         typeIn(["grid", "plugin"]),
-        "Specify the number of columns in the grid pattern"),
+        "指定网格布局的列数"),
     "vbonecut": SBool(
         typeIn(["grid", "plugin"]),
-        "Add cuts in vertical backbones for easier depanelization"),
+        "在垂直中框中添加切口以便拆分"),
     "hbonecut": SBool(
         typeIn(["grid", "plugin"]),
-        "Add cuts in horizontal backbones for easier depanelization"),
+        "在水平中框中添加切口以便拆分"),
     "renamenet": SStr(
         always(),
-        "Net renaming pattern"),
+        "网络重命名模式"),
     "renameref": SStr(
         always(),
-        "Reference renaming pattern"),
+        "位号重命名模式"),
     "baketext": SBool(
         always(),
-        "Substitute variables in text elements"
+        "替换文本元素中的变量"
     ),
     "bakeref": SBool(
         always(),
-        "Bake old references before renaming"
+        "在重命名前烘焙旧位号"
     ),
     "code": SPlugin(
         plugin.LayoutPlugin,
         typeIn(["plugin"]),
-        "Plugin specification as moduleName.pluginName"),
+        "插件规范格式：模块名.插件名"),
     "arg": SStr(
         typeIn(["plugin"]),
-        "String argument for the layout plugin")
+        "布局插件的字符串参数")
 }
 
 def ppLayout(section):
@@ -344,32 +344,32 @@ SOURCE_SECTION = {
     "type": SChoice(
         ["auto", "rectangle", "annotation"],
         always(),
-        "Source type"),
+        "源类型"),
     "tolerance": SLength(
         typeIn(["auto", "annotation"]),
-        "Tolerance enlarges the source area by given amount"),
+        "容差，按指定量扩大源区域"),
     "tlx": SLength(
         typeIn(["rectangle"]),
-        "Corner of the rectangle"),
+        "矩形的左上角 X"),
     "tly": SLength(
         typeIn(["rectangle"]),
-        "Corner of the rectangle"),
+        "矩形的左上角 Y"),
     "brx": SLength(
         typeIn(["rectangle"]),
-        "Corner of the rectangle"),
+        "矩形的右下角 X"),
     "bry": SLength(
         typeIn(["rectangle"]),
-        "Corner of the rectangle"),
+        "矩形的右下角 Y"),
     "ref": SStr(
         typeIn(["annotation"]),
-        "Specify reference of KiKit annotation symbol"),
+        "指定 KiKit 标注符号的位号"),
     "layer": SLayer(
         typeIn(["annotation"]),
-        "Specify layer for annotation lines (default: Edge.Cuts)"),
+        "指定标注线的层（默认：Edge.Cuts）"),
     "stack": SChoice(
         ["inherit", "2layer", "4layer", "6layer"],
         always(),
-        "Specify the number of layers of the panel")
+        "指定拼板的层数")
 }
 
 def ppSource(section):
@@ -379,49 +379,49 @@ TABS_SECTION = {
     "type": SChoice(
         ["none", "fixed", "spacing", "full", "corner", "annotation", "plugin"],
         always(),
-        "Tab type"),
+        "连接条类型"),
     "vwidth": SLength(
         typeIn(["fixed", "spacing", "plugin"]),
-        "Specify width of vertical tabs"),
+        "指定垂直连接条宽度"),
     "hwidth": SLength(
         typeIn(["fixed", "spacing", "plugin"]),
-        "Specify width of horizontal tabs"),
+        "指定水平连接条宽度"),
     "width": SLength(
         typeIn(["corner", "plugin"]),
-        "Specify tab width"),
+        "指定连接条宽度"),
     "mindistance": SLength(
         typeIn(["fixed", "plugin"]),
-        "Minimal spacing between the tabs. If there are too many tabs, their count is reduced."),
+        "连接条之间的最小间距。如果连接条过多，将减少数量。"),
     "spacing": SLength(
         typeIn(["spacing", "plugin"]),
-        "The maximum spacing of the tabs."),
+        "连接条的最大间距。"),
     "vcount": SNum(
         typeIn(["fixed", "plugin"]),
-        "Number of tabs in a given direction."),
+        "指定方向上的连接条数量。"),
     "hcount": SNum(
         typeIn(["fixed", "plugin"]),
-        "Number of tabs in a given direction."),
+        "指定方向上的连接条数量。"),
     "cutout": SLength(
         typeIn(["fixed", "full", "plugin"]),
-        "Depth of cutouts into the frame"),
+        "切入框架的深度"),
     "patchcorners": SBool(
         typeIn(["fixed", "full", "plugin"]),
-        "Choose if to apply corner patches for the full tabs"
+        "选择是否对全连接条应用角补丁"
     ),
     "tabfootprints": SFootprintList(
         typeIn(["annotation", "plugin"]),
-        "Specify custom footprints that will be used for tab annotations."),
+        "指定用于连接条标注的自定义封装。"),
     "fillet": SLength(
         typeIn(["fixed", "spacing", "corner", "annotation", "plugin"]),
-        "Specify tab fillet radius (experimental)"
+        "指定连接条圆角半径（实验性）"
     ),
     "code": SPlugin(
         plugin.TabsPlugin,
         typeIn(["plugin"]),
-        "Plugin specification as moduleName.pluginName"),
+        "插件规范格式：模块名.插件名"),
     "arg": SStr(
         typeIn(["plugin"]),
-        "String argument for the layout plugin")
+        "布局插件的字符串参数")
 }
 
 def ppTabs(section):
@@ -433,56 +433,56 @@ CUTS_SECTION = {
     "type": SChoice(
         ["none", "mousebites", "vcuts", "layer", "plugin"],
         always(),
-        "Cut type"),
+        "切割类型"),
     "drill": SLength(
         typeIn(["mousebites", "plugin"]),
-        "Drill diameter"),
+        "钻孔直径"),
     "spacing": SLength(
         typeIn(["mousebites", "plugin"]),
-        "Hole spacing"),
+        "孔间距"),
     "offset": SLength(
         typeIn(["mousebites", "vcuts", "plugin"]),
-        "Offset cuts into the board"),
+        "切割偏移量"),
     "prolong": SLength(
         typeIn(["mousebites", "layer", "plugin"]),
-        "Tangentiall prolong cuts (to cut mill fillets)"),
+        "切向延长切割（用于切割铣削圆角）"),
     "clearance": SLength(
         typeIn(["vcuts", "plugin"]),
-        "Add copper clearance around V-cuts"),
+        "V-cut 周围的铜皮间距"),
     "cutcurves": SBool(
         typeIn(["vcuts", "plugin"]),
-        "Approximate curves with straight cut"),
+        "用直线切割近似曲线"),
     "linewidth": SLength(
         typeIn(["vcuts", "layer", "plugin"]),
-        "Line width to plot cuts with"),
+        "绘制切割的线宽"),
     "textthickness": SLength(
         typeIn(["vcuts", "plugin"]),
-        "Text thickness for width"),
+        "文本粗度"),
     "textsize": SLength(
         typeIn(["vcuts", "plugin"]),
-        "Text size for vcuts"),
+        "V-cut 文本大小"),
     "endprolongation": SLength(
         typeIn(["vcuts", "plugin"]),
-        "Prolongation on the end of V-CUT without text"),
+        "V-cut 无文本端的延长量"),
     "textprolongation": SLength(
         typeIn(["vcuts", "plugin"]),
-        "Prolongation of the text size of V-CUT"),
+        "V-cut 文本侧的延长量"),
     "textoffset": SLength(
         typeIn(["vcuts", "plugin"]),
-        "Text offset from the V-CUT"),
+        "文本距 V-cut 的偏移"),
     "template": SStr(
         typeIn(["vcuts", "plugin"]),
-        "Text template for the V-CUT"),
+        "V-cut 的文本模板"),
     "layer": SLayer(
         typeIn(["vcuts", "layer", "plugin"]),
-        "Specify layer for the drawings"),
+        "指定绘图层"),
     "code": SPlugin(
         plugin.CutsPlugin,
         typeIn(["plugin"]),
-        "Plugin specification as moduleName.pluginName"),
+        "插件规范格式：模块名.插件名"),
     "arg": SStr(
         typeIn(["plugin"]),
-        "String argument for the layout plugin")
+        "布局插件的字符串参数")
 }
 
 def ppCuts(section):
@@ -492,61 +492,61 @@ FRAMING_SECTION = {
     "type": SChoice(
         ["none", "railstb", "railslr", "frame", "tightframe", "plugin"],
         always(),
-        "Framing type"),
+        "框架类型"),
     "hspace": SLength(
         typeIn(["frame", "railslr", "tightframe", "plugin"]),
-        "Horizontal space between PCBs and the frame"),
+        "PCB 与框架之间的水平间距"),
     "vspace": SLength(
         typeIn(["frame", "railstb", "tightframe", "plugin"]),
-        "Vertical space between PCBs and the frame"),
+        "PCB 与框架之间的垂直间距"),
     "space": SLength(
         never(),
-        "Space between frame/rails and PCBs"),
+        "框架/导轨与 PCB 之间的间距"),
     "width": SLength(
         typeIn(["frame", "railstb", "railslr", "tightframe", "plugin"]),
-        "Width of the framing"),
+        "框架宽度"),
     "mintotalheight": SLength(
         typeIn(["frame", "railstb", "tightframe", "plugin"]),
-        "Minimal height of the panel"
+        "拼板最小高度"
     ),
     "mintotalwidth": SLength(
         typeIn(["frame", "raillr", "tightframe", "plugin"]),
-        "Minimal width of the panel"
+        "拼板最小宽度"
     ),
     "maxtotalheight": SLength(
         typeIn(["frame", "railstb", "tightframe", "plugin"]),
-        "Maximal height of the panel"
+        "拼板最大高度"
     ),
     "maxtotalwidth": SLength(
         typeIn(["frame", "raillr", "tightframe", "plugin"]),
-        "Maximal width of the panel"
+        "拼板最大宽度"
     ),
     "slotwidth": SLength(
         typeIn(["tightframe", "plugin"]),
-        "Width of the milled slot"),
+        "铣削槽宽度"),
     "cuts": SChoice(
         ["none", "both", "v", "h"],
         typeIn(["frame", "plugin"]),
-        "Add cuts to the corners of the frame"),
+        "在框架角部添加切口"),
     "chamferwidth": SLength(
         typeIn(["tightframe", "frame", "railslr", "railstb", "plugin"]),
-        "Add chamfer to the 4 corners of the panel. Specify chamfer width."),
+        "在拼板的四个角添加倒角。指定倒角宽度。"),
     "chamferheight": SLength(
         typeIn(["tightframe", "frame", "railslr", "railstb", "plugin"]),
-        "Add chamfer to the 4 corners of the panel. Specify chamfer height."),
+        "在拼板的四个角添加倒角。指定倒角高度。"),
     "chamfer": SLength(
         never(),
-        "Add chamfer to the 4 corners of the panel. Specifies a 45° chamfer."),
+        "在拼板的四个角添加倒角。指定 45° 倒角。"),
     "fillet": SLength(
         typeIn(["tightframe", "frame", "railslr", "railstb", "plugin"]),
-        "Add fillet to the 4 corners of the panel. Specify fillet radius."),
+        "在拼板的四个角添加圆角。指定圆角半径。"),
     "code": SPlugin(
         plugin.FramingPlugin,
         typeIn(["plugin"]),
-        "Plugin specification as moduleName.pluginName"),
+        "插件规范格式：模块名.插件名"),
     "arg": SStr(
         typeIn(["plugin"]),
-        "String argument for the layout plugin")
+        "布局插件的字符串参数")
 }
 
 def ppFraming(section):
@@ -561,29 +561,29 @@ TOOLING_SECTION = {
     "type": SChoice(
         ["none", "3hole", "4hole", "plugin"],
         always(),
-        "Tooling type"),
+        "工具孔类型"),
     "hoffset": SLength(
         typeIn(["3hole", "4hole", "plugin"]),
-        "Horizontal offset for the hole"),
+        "孔的水平偏移"),
     "voffset": SLength(
         typeIn(["3hole", "4hole", "plugin"]),
-        "Vertical offset for the hole"),
+        "孔的垂直偏移"),
     "size": SLength(
         typeIn(["3hole", "4hole", "plugin"]),
-        "Hole diameter"),
+        "孔径"),
     "paste": SBool(
         typeIn(["3hole", "4hole", "plugin"]),
-        "Include holes on the paste layer"),
+        "在钢网层包含孔"),
     "soldermaskmargin": SLength(
         typeIn(["3hole", "4hole", "plugin"]),
-        "Solder mask expansion/margin"),
+        "阻焊扩展/边距"),
     "code": SPlugin(
         plugin.ToolingPlugin,
         typeIn(["plugin"]),
-        "Plugin specification as moduleName.pluginName"),
+        "插件规范格式：模块名.插件名"),
     "arg": SStr(
         typeIn(["plugin"]),
-        "String argument for the layout plugin")
+        "布局插件的字符串参数")
 }
 
 def ppTooling(section):
@@ -593,29 +593,29 @@ FIDUCIALS_SECTION = {
     "type": SChoice(
         ["none", "3fid", "4fid", "plugin"],
         always(),
-        "Fiducial type"),
+        "基准点类型"),
     "hoffset": SLength(
         typeIn(["3fid", "4fid", "plugin"]),
-        "Horizontal offset for the fiducial"),
+        "基准点的水平偏移"),
     "voffset": SLength(
         typeIn(["3fid", "4fid", "plugin"]),
-        "Vertical offset for the fiducial"),
+        "基准点的垂直偏移"),
     "coppersize": SLength(
         typeIn(["3fid", "4fid", "plugin"]),
-        "Diameter of the copper part"),
+        "铜皮直径"),
     "opening": SLength(
         typeIn(["3fid", "4fid", "plugin"]),
-        "Diameter of the opening"),
+        "开窗直径"),
     "paste": SBool(
         typeIn(["3fid", "4fid", "plugin"]),
-        "Include fiducials on the paste layer"),
+        "在钢网层包含基准点"),
     "code": SPlugin(
         plugin.FiducialsPlugin,
         typeIn(["plugin"]),
-        "Plugin specification as moduleName.pluginName"),
+        "插件规范格式：模块名.插件名"),
     "arg": SStr(
         typeIn(["plugin"]),
-        "String argument for the layout plugin")
+        "布局插件的字符串参数")
 }
 
 def ppFiducials(section):
@@ -625,45 +625,45 @@ TEXT_SECTION = {
     "type": SChoice(
         ["none", "simple"],
         always(),
-        "Text type"),
+        "文本类型"),
     "hoffset": SLength(
         typeIn(["simple"]),
-        "Horizontal offset of the text from anchor"),
+        "文本距锚点的水平偏移"),
     "voffset": SLength(
         typeIn(["simple"]),
-        "Vertical offset of the text from anchor"),
+        "文本距锚点的垂直偏移"),
     "width": SLength(
         typeIn(["simple"]),
-        "Width of a character"),
+        "字符宽度"),
     "height": SLength(
         typeIn(["simple"]),
-        "Height of a character"),
+        "字符高度"),
     "thickness": SLength(
         typeIn(["simple"]),
-        "Thickness of a character"),
+        "字符粗度"),
     "hjustify": SHJustify(
         typeIn(["simple"]),
-        "Text alignment"),
+        "文本水平对齐"),
     "vjustify": SVJustify(
         typeIn(["simple"]),
-        "Text alignment"),
+        "文本垂直对齐"),
     "layer": SLayer(
         typeIn(["simple"]),
-        "Text layer"),
+        "文本层"),
     "orientation": SAngle(
         typeIn(["simple"]),
-        "Orientation of the text"),
+        "文本方向"),
     "text": SStr(
         typeIn(["simple"]),
-        "Text to render"),
+        "要渲染的文本"),
     "anchor": SChoice(
         ANCHORS,
         typeIn(["simple"]),
-        "Anchor for positioning the text"),
+        "定位文本的锚点"),
     "plugin": SPlugin(
         plugin.TextVariablePlugin,
         typeIn(["simple"]),
-        "Plugin for extra text variables")
+        "额外文本变量的插件")
 }
 
 def ppText(section):
@@ -673,35 +673,35 @@ COPPERFILL_SECTION = {
     "type": SChoice(
         ["none", "solid", "hatched", "hex"],
         always(),
-        "Fill non board areas with copper"),
+        "用铜皮填充非电路板区域"),
     "clearance": SLength(
         typeIn(["solid", "hatched", "hex"]),
-        "Clearance between the fill and boards"),
+        "填充与电路板之间的间距"),
     "edgeclearance": SLength(
         typeIn(["solid", "hatched", "hex"]),
-        "Clearance between the fill and boards"),
+        "填充与电路板边缘之间的间距"),
     "layers": SLayerList(
         typeIn(["solid", "hatched", "hex"]),
-        "Specify which layer to fill with copper",
+        "指定要填充铜皮的层",
         {
             "all": Layer.allCu()
         }),
     "width": SLength(
         typeIn(["hatched"]),
-        "Width of hatch strokes"),
+        "网纹线宽"),
     "spacing": SLength(
         typeIn(["hatched", "hex"]),
-        "Spacing of hatch strokes or hexagons"),
+        "网纹线或六边形的间距"),
     "orientation": SAngle(
         typeIn(["hatched"]),
-        "Orientation of the strokes"),
+        "线条方向"),
     "diameter": SLength(
         typeIn(["hex"]),
-        "Diameter of hexagons"
+        "六边形直径"
     ),
     "threshold": SPercent(
         typeIn(["hex"]),
-        "Remove fragments smaller than threshold"
+        "移除小于阈值的碎片"
     )
 }
 
@@ -712,39 +712,39 @@ POST_SECTION = {
     "type": SChoice(
         ["auto"],
         never(),
-        "Postprocessing type"),
+        "后处理类型"),
     "copperfill": SBool(
         always(),
-        "DEPRECATED, use section copperfill instead. Fill unused areas of the panel with copper"),
+        "已弃用，请改用 copperfill 配置段。用铜皮填充拼板的未使用区域"),
     "millradius": SLength(
         always(),
-        "Simulate milling operation"),
+        "模拟铣削操作"),
     "millradiusouter": SLength(
         always(),
-        "Simulate milling operation only on the outer perimeter of boards"),
+        "仅在电路板外周边模拟铣削操作"),
     "reconstructarcs": SBool(
         always(),
-        "Try to reconstruct arcs"),
+        "尝试重建圆弧"),
     "refillzones": SBool(
         always(),
-        "Refill all zones in the panel"),
+        "重新填充拼板中的所有区域"),
     "script": SStr(
         always(),
-        "Specify path to a custom postprocessing script"),
+        "指定自定义后处理脚本路径"),
     "scriptarg": SStr(
         always(),
-        "String argument for the postprocessing script"),
+        "后处理脚本的字符串参数"),
     "origin": SChoice(
         ANCHORS + [""],
         always(),
-        "Place auxiliary origin"),
+        "放置辅助原点"),
     "dimensions": SBool(
         always(),
-        "Add dimensions markings to the finished panel"
+        "在完成的拼板上添加尺寸标注"
     ),
     "edgewidth": SLength(
         always(),
-        "Specify line width for the Edge.Cuts of the panel"
+        "指定拼板 Edge.Cuts 的线宽"
     )
 }
 
@@ -755,23 +755,23 @@ PAGE_SECTION = {
     "type": SChoice(
         PAPERS,
         always(),
-        "Size of paper"),
+        "纸张尺寸"),
     "anchor": SChoice(
         ANCHORS,
         always(),
-        "Anchor for positioning the panel on the page"),
+        "在页面上定位拼板的锚点"),
     "posx": SLengthOrPercent(
         always(),
-        "X position of the panel. Length or percents of page width."),
+        "拼板的 X 位置。长度或页面宽度的百分比。"),
     "posy": SLengthOrPercent(
         always(),
-        "Y position of the panel. Length or percents of page height."),
+        "拼板的 Y 位置。长度或页面高度的百分比。"),
     "width": SLength(
         typeIn(["user"]),
-        "Width of custom paper"),
+        "自定义纸张宽度"),
     "height": SLength(
         typeIn(["user"]),
-        "Height of custom paper"),
+        "自定义纸张高度"),
 }
 
 def ppPage(section):
@@ -784,26 +784,26 @@ DEBUG_SECTION = {
         ""),
     "drawPartitionLines": SBool(
         always(),
-        "Draw parition lines"),
+        "绘制分割线"),
     "drawBackboneLines": SBool(
         always(),
-        "Draw backbone lines"),
+        "绘制中框线"),
     "drawboxes": SBool(
         always(),
-        "Draw board bounding boxes"),
+        "绘制电路板边界框"),
     "trace": SBool(
         always(),
-        "Print stacktrace"),
+        "打印堆栈跟踪"),
     "drawtabfail": SBool(
         always(),
-        "Visualize tab building failures"
+        "可视化连接条构建失败"
     ),
     "deterministic": SBool(
         always(),
-        "Make KiCAD IDs deterministic"),
+        "使 KiCAD ID 确定性生成"),
     "drawTabFillet": SBool(
         always(),
-        "Draw forward tabs, reverse tabs, and raw frame geometry for fillet debugging")
+        "绘制正向/反向连接条和原始框架几何用于圆角调试")
 }
 
 def ppDebug(section):

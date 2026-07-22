@@ -3,19 +3,18 @@ import click
 @click.command()
 @click.argument("outdir", type=click.Path(file_okay=False))
 @click.option("--description", "-d", type=click.Path(dir_okay=False),
-    required=True, help="markdown file with page text")
+    required=True, help="包含页面文本的 markdown 文件")
 @click.option("--board", "-b", type=(str, str, click.Path(dir_okay=False)),
-    multiple=True, help="<name> <comment> <kicad_pcb file> to include in generated page.")
+    multiple=True, help="<名称> <注释> <kicad_pcb 文件> 包含在生成的页面中。")
 @click.option("--resource", "-r", type=click.Path(dir_okay=True), multiple=True,
-    help="Additional resource files to (e.g., images referenced in description) to include.")
+    help="额外的资源文件（例如描述中引用的图片）。")
 @click.option("--template", type=click.Path(), default="default",
-    help="Path to a template directory or a name of built-in one. See doc/present.md for template specification.")
-@click.option("--repository", type=str, help="URL of the repository")
-@click.option("--name", type=str, help="Name of the board (used e.g., for title)", required=True)
+    help="模板目录路径或内置模板名称。详见 doc/present.md 了解模板规范。")
+@click.option("--repository", type=str, help="仓库 URL")
+@click.option("--name", type=str, help="电路板名称（用于标题等）", required=True)
 def boardpage(**kwargs):
     """
-    Build a board presentation page based on markdown description and include
-    download links for board sources and gerbers.
+    基于 markdown 描述构建电路板展示页面，包含电路板源文件和 Gerber 文件的下载链接。
     """
     from kikit import present
     from kikit.common import fakeKiCADGui
@@ -26,7 +25,7 @@ def boardpage(**kwargs):
 @click.group()
 def present():
     """
-    Prepare board presentation
+    准备电路板展示
     """
     pass
 

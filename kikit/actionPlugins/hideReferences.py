@@ -12,7 +12,7 @@ class HideReferencesDialog(wx.Dialog):
     def __init__(self, state, parent=None, board=None, action=None, updateState=None):
         wx.Dialog.__init__(self,
             parent,
-            title=f'Specify which components to hide (version {kikit.__version__})',
+            title=f'指定要隐藏的元件（版本 {kikit.__version__}）',
             style=wx.RESIZE_BORDER | wx.DEFAULT_DIALOG_STYLE)
         self.board = board
         self.actionCallback = action
@@ -32,7 +32,7 @@ class HideReferencesDialog(wx.Dialog):
         self.item_grid.AddGrowableCol(1)
 
         label = wx.StaticText(panel,
-            label="Apply to labels pattern:\n(regular expression)",
+            label="应用到标签模式：\n（正则表达式）",
             size=wx.Size(200, -1),
             style=wx.ALIGN_RIGHT)
         label.Wrap(200)
@@ -42,7 +42,7 @@ class HideReferencesDialog(wx.Dialog):
         self.Bind(wx.EVT_TEXT, self.OnPatternChange, id=self.pattern.GetId())
         self.item_grid.Add(self.pattern, 0, wx.EXPAND)
 
-        label = wx.StaticText(panel, label="Only Selected items:",
+        label = wx.StaticText(panel, label="仅已选项目：",
             size=wx.Size(200, -1),
             style=wx.ALIGN_RIGHT)
         label.Wrap(200)
@@ -52,27 +52,27 @@ class HideReferencesDialog(wx.Dialog):
         self.selected_only.SetValue(self.selectedItemOnly)
         self.item_grid.Add(self.selected_only, 0, wx.EXPAND)
 
-        label = wx.StaticText(panel, label="What to do:",
+        label = wx.StaticText(panel, label="操作：",
             size=wx.Size(200, -1),
             style=wx.ALIGN_RIGHT)
         label.Wrap(200)
         self.item_grid.Add(label, 1, wx.ALIGN_CENTRE_VERTICAL)
         self.action = wx.Choice(panel, style=wx.CB_DROPDOWN,
-            choices=["Show", "Hide"])
+            choices=["显示", "隐藏"])
         self.action.SetSelection(state.get("action", 1))
         self.item_grid.Add(self.action, 0, wx.EXPAND)
 
-        label = wx.StaticText(panel, label="Apply to:",
+        label = wx.StaticText(panel, label="应用于：",
             size=wx.Size(200, -1),
             style=wx.ALIGN_RIGHT)
         label.Wrap(200)
         self.item_grid.Add(label, 1, wx.ALIGN_CENTRE_VERTICAL)
         self.scope = wx.Choice(panel, style=wx.CB_DROPDOWN,
-            choices=["References only", "Values only", "References and values"])
+            choices=["仅参考编号", "仅值", "参考编号和值"])
         self.scope.SetSelection(state.get("scope", 2))
         self.item_grid.Add(self.scope, 0, wx.EXPAND)
 
-        label = wx.StaticText(panel, label="Layers to include:",
+        label = wx.StaticText(panel, label="要包含的层：",
             size=wx.Size(200, -1),
             style=wx.ALIGN_RIGHT | wx.ALIGN_TOP)
         label.Wrap(200)
@@ -84,7 +84,7 @@ class HideReferencesDialog(wx.Dialog):
             self.layers.Check(l, checked)
         self.item_grid.Add(self.layers, 0, wx.EXPAND)
 
-        label = wx.StaticText(panel, label="Select layers:",
+        label = wx.StaticText(panel, label="选择层：",
             size=wx.Size(200, -1),
             style=wx.ALIGN_RIGHT | wx.ALIGN_TOP)
         label.Wrap(200)
@@ -95,31 +95,31 @@ class HideReferencesDialog(wx.Dialog):
         buttonGrid.AddGrowableCol(1)
         self.item_grid.Add(buttonGrid, 0, wx.EXPAND)
 
-        allLayersBtn = wx.Button(panel, label='All layers')
+        allLayersBtn = wx.Button(panel, label='所有层')
         self.Bind(wx.EVT_BUTTON, self.OnAllLayers, id=allLayersBtn.GetId())
         buttonGrid.Add(allLayersBtn, 1, wx.EXPAND)
 
-        noLayersBtn = wx.Button(panel, label='No layers')
+        noLayersBtn = wx.Button(panel, label='无层')
         self.Bind(wx.EVT_BUTTON, self.OnNoLayers, id=noLayersBtn.GetId())
         buttonGrid.Add(noLayersBtn, 1, wx.EXPAND)
 
-        techLayersBtn = wx.Button(panel, label='Toggle technical layers')
+        techLayersBtn = wx.Button(panel, label='切换技术层')
         self.Bind(wx.EVT_BUTTON, self.OnTechnicalLayers, id=techLayersBtn.GetId())
         buttonGrid.Add(techLayersBtn, 1, wx.EXPAND)
 
-        silkLayersBtn = wx.Button(panel, label='Toggle silkscreen layers')
+        silkLayersBtn = wx.Button(panel, label='切换丝印层')
         self.Bind(wx.EVT_BUTTON, self.OnSilkscreenLayers, id=silkLayersBtn.GetId())
         buttonGrid.Add(silkLayersBtn, 1, wx.EXPAND)
 
 
         label = wx.StaticText(panel,
-            label="Matching references:",
+            label="匹配的参考编号：",
             size=wx.Size(200, -1),
             style=wx.ALIGN_RIGHT)
         label.Wrap(200)
         self.item_grid.Add(label, 1, wx.ALIGN_TOP)
         self.matchingText = wx.StaticText(panel,
-            label="Matching references:",
+            label="匹配的参考编号：",
             size=wx.Size(350, 80),
             style=wx.ALIGN_LEFT | wx.ST_ELLIPSIZE_END)
         self.item_grid.Add(self.matchingText, 1, wx.EXPAND)
@@ -127,11 +127,11 @@ class HideReferencesDialog(wx.Dialog):
 
         button_box = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancelButton = wx.Button(panel, label='Close')
+        cancelButton = wx.Button(panel, label='关闭')
         self.Bind(wx.EVT_BUTTON, self.OnCancel, id=cancelButton.GetId())
         button_box.Add(cancelButton, 1, wx.RIGHT, 10)
 
-        self.applyButton = wx.Button(panel, label='Apply')
+        self.applyButton = wx.Button(panel, label='应用')
         self.Bind(wx.EVT_BUTTON, self.OnApply, id=self.applyButton.GetId())
         button_box.Add(self.applyButton, 1)
 
@@ -242,9 +242,9 @@ class HideReferencesDialog(wx.Dialog):
 
 class HideReferencesPlugin(pcbnew.ActionPlugin):
     def defaults(self):
-        self.name = "KiKit: Show/hide references"
+        self.name = "KiKit：显示/隐藏参考编号"
         self.category = "KiKit"
-        self.description = "Show/hide references in the board based on regular expression"
+        self.description = "基于正则表达式显示/隐藏电路板中的参考编号"
         self.icon_file_name = os.path.join(PKG_BASE, "resources", "graphics", "removeRefIcon_24x24.png")
         self.show_toolbar_button = True
 
@@ -253,7 +253,7 @@ class HideReferencesPlugin(pcbnew.ActionPlugin):
         self._dialogState = {}
 
     def error(self, msg):
-        wx.MessageBox(msg, "Error", wx.OK | wx.ICON_ERROR)
+        wx.MessageBox(msg, "错误", wx.OK | wx.ICON_ERROR)
 
     def action(self, dialog):
         try:
@@ -267,7 +267,7 @@ class HideReferencesPlugin(pcbnew.ActionPlugin):
                     dialog.GetSelectedItemOnly())
             pcbnew.Refresh()
         except Exception as e:
-            self.error(f"Cannot perform: {e}")
+            self.error(f"无法执行：{e}")
 
     def updateState(self, newState):
         self._dialogState = newState
@@ -277,7 +277,7 @@ class HideReferencesPlugin(pcbnew.ActionPlugin):
         pcbnew_window = wx.FindWindowByName("PcbFrame")
         if pcbnew_window is None:
             # Something failed, abort
-            self.error("Failed to find pcbnew main window")
+            self.error("未找到 pcbnew 主窗口")
             return
         try:
             dialog = initDialog(lambda: HideReferencesDialog(

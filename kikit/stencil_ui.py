@@ -8,24 +8,24 @@ from .common import execute_with_debug
 @click.argument("inputBoard", type=click.Path(dir_okay=False))
 @click.argument("outputDir", type=click.Path(dir_okay=True))
 @click.option("--pcbthickness", type=float, default=1.6,
-    help="PCB thickness in mm")
+    help="PCB 厚度（mm）")
 @click.option("--thickness", type=float, default=0.15,
-    help="Stencil thickness in mm. Defines amount of paste dispensed")
+    help="钢网厚度（mm）。决定焊膏量。")
 @click.option("--framewidth", type=float, default=1,
-    help="Register frame width")
+    help="定位框宽度")
 @click.option("--ignore", type=str, default="",
-    help="Comma separated list of components references to exclude from the stencil")
+    help="要从钢网中排除的元件位号列表（逗号分隔）")
 @click.option("--cutout", type=str, default="",
-    help="Comma separated list of components references to cutout from the stencil based on the courtyard")
+    help="基于 courtyar 从钢网中挖空的元件位号列表（逗号分隔）")
 @click.option("--frameclearance", type=float, default=0,
-    help="Clearance for the stencil register in milimeters")
+    help="钢网定位框间距（mm）")
 @click.option("--enlargeholes", type=float, default=0,
-    help="Enlarge pad holes by x mm")
+    help="将焊盘孔扩大 x mm")
 @click.option("--debug", is_flag=True, default=False,
-        help="Print extra debugging information")
+        help="打印额外的调试信息")
 def createPrinted(**kwargs):
     """
-    Create a 3D printed self-registering stencil.
+    创建 3D 打印自定位钢网。
     """
     from kikit import stencil
 
@@ -36,25 +36,25 @@ def createPrinted(**kwargs):
 @click.argument("inputBoard", type=click.Path(dir_okay=False))
 @click.argument("outputDir", type=click.Path(dir_okay=True))
 @click.option("--jigsize", type=(int, int), default=(100, 100),
-    help="Jig frame size in mm: <width> <height>")
+    help="治具框架尺寸（mm）：<宽> <高>")
 @click.option("--jigthickness", type=float, default=3,
-    help="Jig thickness in mm")
+    help="治具厚度（mm）")
 @click.option("--pcbthickness", type=float, default=1.6,
-    help="PCB thickness in mm")
+    help="PCB 厚度（mm）")
 @click.option("--registerborder", type=(float, float), default=(3, 1),
-    help="Register borders in mm: <outer> <inner>")
+    help="定位边框（mm）：<外> <内>")
 @click.option("--tolerance", type=float, default=0.05,
-    help="Enlarges the register by the tolerance value")
+    help="按容差值扩大定位区域")
 @click.option("--ignore", type=str, default="",
-    help="Comma separated list of components references to exclude from the stencil")
+    help="要从钢网中排除的元件位号列表（逗号分隔）")
 @click.option("--cutout", type=str, default="",
-    help="Comma separated list of components references to cutout from the stencil based on the courtyard")
+    help="基于 courtyar 从钢网中挖空的元件位号列表（逗号分隔）")
 @click.option("--debug", is_flag=True, default=False,
-        help="Print extra debugging information")
+        help="打印额外的调试信息")
 def create(**kwargs):
     """
-    Create stencil and register elements for manual paste dispensing jig.
-    See more details at: https://github.com/yaqwsx/KiKit/blob/master/doc/stencil.md
+    创建用于手动焊膏点涂治具的钢网和定位元素。
+    更多详情请参阅：https://github.com/yaqwsx/KiKit/blob/master/doc/stencil.md
     """
     from kikit import stencil
     from kikit.common import fakeKiCADGui
@@ -66,7 +66,7 @@ def create(**kwargs):
 @click.group()
 def stencil():
     """
-    Create solder paste stencils
+    创建焊膏钢网
     """
     pass
 

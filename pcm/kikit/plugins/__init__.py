@@ -3,7 +3,7 @@ import wx.adv
 
 class MissingKiKitDialog(wx.Dialog):
     def __init__(self, parent=None):
-        wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title=u"KiKit installation not found!",
+        wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title=u"未找到 KiKit 安装！",
                            pos=wx.DefaultPosition, size=wx.Size(500, 300), style=wx.DEFAULT_DIALOG_STYLE)
 
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
@@ -11,7 +11,7 @@ class MissingKiKitDialog(wx.Dialog):
         bSizer1 = wx.BoxSizer(wx.VERTICAL)
 
         self.staticText = wx.StaticText(
-            self, wx.ID_ANY, u"No KiKit backend found! You probably installed KiKit only via PCM.\n\nPlease follow the installation guide at the link below. Until you finish the installation no KiKit functions will be available. After finishing the installation, please restart KiCAD.", wx.DefaultPosition, wx.DefaultSize, 0)
+            self, wx.ID_ANY, u"未找到 KiKit 后端！您可能仅通过 PCM 安装了 KiKit。\n\n请按照下方链接的安装指南进行操作。在完成安装之前，KiKit 功能将不可用。安装完成后，请重新启动 KiCAD。", wx.DefaultPosition, wx.DefaultSize, 0)
         self.staticText.Wrap(-1)
 
         bSizer1.Add(self.staticText, 1, wx.ALL | wx.EXPAND, 5)
@@ -21,7 +21,7 @@ class MissingKiKitDialog(wx.Dialog):
         bSizer1.Add(self.hyperlink, 0, wx.ALL | wx.EXPAND, 5)
 
         self.okButton = wx.Button(
-            self, wx.ID_ANY, u"OK", wx.DefaultPosition, wx.DefaultSize, 0)
+            self, wx.ID_ANY, u"确定", wx.DefaultPosition, wx.DefaultSize, 0)
         bSizer1.Add(self.okButton, 0, wx.ALL | wx.EXPAND, 5)
 
         self.SetSizer(bSizer1)

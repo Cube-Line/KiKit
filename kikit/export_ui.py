@@ -3,7 +3,7 @@ import click
 @click.group()
 def export():
     """
-    Export KiCAD boards
+    导出 KiCAD 电路板
     """
     pass
 
@@ -22,11 +22,11 @@ def gerber(boardfile, outputdir):
 @click.argument("outputdir", type=click.Path(file_okay=False), default=None)
 def dxf(boardfile, outputdir):
     """
-    Export board edges and pads to DXF.
+    将电路板边缘和焊盘导出为 DXF 格式。
 
-    If no output dir is specified, use working directory.
+    如果未指定输出目录，则使用工作目录。
 
-    This command is designed for building 3D printed stencils
+    此命令设计用于构建 3D 打印钢网。
     """
     from kikit.export import dxfImpl
     from kikit.common import fakeKiCADGui
