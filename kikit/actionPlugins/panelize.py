@@ -18,6 +18,8 @@ from itertools import chain
 
 PLATFORMS = ["Linux/MacOS", "Windows"]
 
+PRESET_STATE_PATH = os.path.expanduser("~/.config/kikit/panelize_state.json")
+
 SECTION_DISPLAY = {
     "Input": "输入",
     "Output": "输出",
@@ -819,10 +821,25 @@ class PanelizeDialog(wx.Dialog):
                     style=wx.OK | wx.ICON_ERROR, parent=self)
 
 
+def _loadPreset():
+    try:
+        with open(PRESET_STATE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def _savePreset(preset):
+    try:
+        os.makedirs(os.path.dirname(PRESET_STATE_PATH), exist_ok=True)
+        with open(PRESET_STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump(preset, f, indent=2)
+    except OSError:
+        pass
+
 class PanelizePlugin(pcbnew.ActionPlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.preset = {}
+        self.preset = _loadPreset()
         self.dirty = False
 
     def defaults(self):
@@ -850,6 +867,7 @@ class PanelizePlugin(pcbnew.ActionPlugin):
             dialog.ShowModal()
             self.preset = dialog.collectPreset(includeInput=True)
             self.dirty = self.dirty or dialog.dirty
+            _savePreset(self.preset)
         except Exception as e:
             dlg = wx.MessageDialog(
                 None, f"无法执行：{e}", "错误", wx.OK)
