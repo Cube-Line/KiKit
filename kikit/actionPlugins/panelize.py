@@ -419,16 +419,17 @@ class SectionGui():
 
 
 class PanelizeDialog(wx.Dialog):
-    def __init__(self, parent=None, board=None, preset=None):
+    def __init__(self, parent=None, board=None, preset=None, onClose=None):
         wx.Dialog.__init__(
             self, parent, title=f'拼板 (版本 {kikit.__version__})',
-            style=wx.DEFAULT_DIALOG_STYLE)
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
         self.Bind(wx.EVT_CLOSE, self.OnClose, id=self.GetId())
 
         self.board = board
         self.dirty = False
         self.progressDlg = None
         self.lastPulse = time.time()
+        self._onClose = onClose
 
         topMostBoxSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -441,10 +442,10 @@ class PanelizeDialog(wx.Dialog):
 
         self.scrollWindow = wx.ScrolledWindow(
             self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.VSCROLL)
-        self.scrollWindow.SetSizeHints(self.maxDialogSize, wx.Size(self.maxDialogSize.width, -1))
+        self.scrollWindow.SetSizeHints(wx.Size(480, 400), wx.Size(self.maxDialogSize.width, -1))
         self.scrollWindow.SetScrollRate(5, 5)
         self._buildSections(self.scrollWindow)
-        middleSizer.Add(self.scrollWindow, 0, wx.EXPAND | wx.ALL, 5)
+        middleSizer.Add(self.scrollWindow, 1, wx.EXPAND | wx.ALL, 5)
 
         self._buildOutputSections(middleSizer)
 
@@ -452,6 +453,7 @@ class PanelizeDialog(wx.Dialog):
         self._buildBottomButtons(topMostBoxSizer)
 
         self.SetSizer(topMostBoxSizer)
+        self.SetInitialSize(wx.Size(800, 600))
         self.populateInitialValue(preset)
         self.buildOutputSections()
         self.showOnlyRelevantFields()
@@ -567,13 +569,14 @@ class PanelizeDialog(wx.Dialog):
 
     def OnResize(self):
         self.scrollWindow.GetSizer().Layout()
-        self.scrollWindow.Fit()
         self.scrollWindow.FitInside()
         self.GetSizer().Layout()
-        self.Fit()
+        self.Layout()
 
     def OnClose(self, event):
-        self.EndModal(0)
+        if self._onClose is not None:
+            self._onClose(self.collectPreset(includeInput=True), self.dirty)
+        self.Destroy()
 
     def _updatePanelizationProgress(self, message, force=False):
         self.phase = message
@@ -851,7 +854,6 @@ class PanelizePlugin(pcbnew.ActionPlugin):
 
     def Run(self):
         try:
-            dialog = None
             if not self.dirty and not pcbnew.GetBoard().IsEmpty():
                 dlg = wx.MessageDialog(
                     None,
@@ -863,18 +865,17 @@ class PanelizePlugin(pcbnew.ActionPlugin):
                 dlg.Destroy()
                 if ret == wx.ID_NO:
                     return
-            dialog = initDialog(lambda: PanelizeDialog(None, pcbnew.GetBoard(), self.preset))
-            dialog.ShowModal()
-            self.preset = dialog.collectPreset(includeInput=True)
-            self.dirty = self.dirty or dialog.dirty
-            _savePreset(self.preset)
+            def onClose(preset, dirty):
+                self.preset = preset
+                self.dirty = self.dirty or dirty
+                _savePreset(self.preset)
+            dialog = initDialog(lambda: PanelizeDialog(None, pcbnew.GetBoard(), self.preset, onClose))
+            dialog.Show()
         except Exception as e:
             dlg = wx.MessageDialog(
                 None, f"无法执行：{e}", "错误", wx.OK)
             dlg.ShowModal()
             dlg.Destroy()
-        finally:
-            destroyDialog(dialog)
 
 
 plugin = PanelizePlugin

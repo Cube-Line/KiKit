@@ -17,7 +17,7 @@ inch = 1000 * mil
 deg = pcbnew.EDA_ANGLE(1, pcbnew.DEGREES_T)
 rad = pcbnew.EDA_ANGLE(1, pcbnew.RADIANS_T)
 
-UNIT_SPLIT = re.compile(r"\s*(-?\s*\d+(\.\d*)?)\s*(\w+|\%)$")
+UNIT_SPLIT = re.compile(r"\s*(-?\s*\d+(\.\d*)?)\s*([a-zA-Z]+\w*|\%)$")
 
 class BaseValue(int):
     """
