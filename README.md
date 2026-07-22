@@ -1,102 +1,73 @@
-# KiKit – Automation for KiCAD
+# KiKit – KiCAD 自动化工具
 
 ![KiKit Logo](https://github.com/yaqwsx/KiKit/raw/master/kikit/resources/graphics/kikitIcon_64x64.png)
 
-KiKit is a Python library, KiCAD plugin and  a CLI tool to automate several
-tasks in a standard KiCAD workflow like:
+KiKit 是一个 Python 库、KiCAD 插件和 CLI 工具，用于自动完成标准 KiCAD 工作流程中的若干任务，例如：
 
-- panelization of both, regular and oddly shaped, boards (see
-  [examples](https://yaqwsx.github.io/KiKit/latest/panelization/examples/))
-- automated exporting manufacturing data based on manufacturer presets
-- multi-board project in KiCAD
-- building board presentation pages (see [an example presentation page generated
-  by KiKit](https://roboticsbrno.github.io/RB0002-BatteryPack))
+- 拼板，支持常规形状和不规则形状的电路板（参见[示例](https://yaqwsx.github.io/KiKit/latest/panelization/examples/)）
+- 基于制造商预设自动导出制造数据
+- KiCAD 多板项目
+- 构建电路板展示页面（参见[由 KiKit 生成的示例展示页面](https://roboticsbrno.github.io/RB0002-BatteryPack)）
 
 ![KiKit Promo](https://github.com/yaqwsx/KiKit/blob/master/docs/resources/promo.jpg?raw=true)
 
-## Do You Enjoy KiKit or Does It Save You Time?
+## 你喜欢 KiKit 吗？它为你节省时间了吗？
 
-Then definitely consider:
+如果是，请考虑：
 
-- [**supporting me on GitHub Sponsors**](https://github.com/sponsors/yaqwsx)
-- or become my [Patreon](https://patreon.com/yaqwsx),
-- or buy me a coffee: [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E2181LU)
+- [**在 GitHub Sponsors 上支持我**](https://github.com/sponsors/yaqwsx)
+- 或成为我的 [Patreon](https://patreon.com/yaqwsx) 赞助者，
+- 或请我喝杯咖啡：[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E2181LU)
 
-Your support will allow me to allocate time to properly maintain my projects
-like this.
+您的支持将使我能够分配时间来妥善维护此类项目。
 
-PS: Be sure to check out my other KiCAD & PCB related projects:
+PS：请务必查看我的其他 KiCAD 和 PCB 相关项目：
 
 - [Pinion](https://github.com/yaqwsx/Pinion/)
 - [PcbDraw](https://github.com/yaqwsx/PcbDraw/)
 - [JlcParts](https://github.com/yaqwsx/jlcparts)
 
-## Installation
+## 安装
 
-KiKit is available as a [PyPi package](https://pypi.org/project/KiKit/).
-However, due to packaging of KiCAD, installation on some platforms requires
-usage of specific Python interpreter.
+KiKit 以 [PyPi 包](https://pypi.org/project/KiKit/) 形式提供。但由于 KiCAD 的打包方式，在某些平台上需要使用特定的 Python 解释器进行安装。
 
-Please follow the detailed [installation
-guide](https://yaqwsx.github.io/KiKit/latest/installation/intro/) that covers
-installation based on the platform you use.
+请按照详细的[安装指南](https://yaqwsx.github.io/KiKit/latest/installation/intro/)进行操作，其中涵盖了基于您所使用平台的安装方法。
 
-## Why Should I Use It?
+## 为什么应该使用它？
 
-Everything KiKit does, can also be done via Pcbnew in KiCAD. However, you have
-to do it manually. One of the common scenarios is the creation of panels. Most
-of the tutorials on the internet guide you to use the "append board"
-functionality of Pcbnew. However, this approach is labour-intensive, error-prone
-and whenever, you change the board, you have to do it again.
+KiKit 能做的所有事情，也可以通过 KiCAD 中的 Pcbnew 完成。但您必须手动操作。一个常见场景是创建拼板。互联网上的大多数教程都引导您使用 Pcbnew 的"附加电路板"功能。然而，这种方法劳动密集、容易出错，而且每当您更改电路板时，都必须重新操作。
 
-With KiKit you just call a CLI command if you have a simple layout (e.g., a
-grid) or write few Python instructions like "place board here", "add bridge
-here", "separate boards via mouse bites/v-cuts" and you are done. The process is
-repeatable and actually much simpler than hand-drawing the panels. KiKit also
-allows you to easily export all the Gerbers in a single step.
+使用 KiKit，如果您有简单的布局（例如网格），只需调用 CLI 命令，或编写几条 Python 指令，如"在此放置电路板"、"在此添加连接桥"、"通过邮票孔/V-cut 分离电路板"，即可完成。这个过程是可重复的，而且实际上比手工绘制拼板简单得多。KiKit 还允许您轻松地一次性导出所有 Gerber 文件。
 
-You can then write a Makefile and simply call `make` to get all your
-manufacturing data and board presentation pages.
+然后您可以编写 Makefile，只需调用 `make` 即可获取所有制造数据和电路板展示页面。
 
-## Feature List
+## 功能列表
 
-- create panels by appending boards and pieces of substrate (bridges)
-- supports board with arbitrary shapes
-- easily create mouse-bites/V-CUTS
-- compared to hand-creation of panels, your panels will pass DRC (as tracks from
-  different instances of the same board have distinct nets when using KiKit)
-- if you have multiple boards in a single file, you can split them
-- simplifying [multi-board project in KiCAD](https://yaqwsx.github.io/KiKit/latest/multiboard/)
-- [automated export of gerbers and assembly data](https://yaqwsx.github.io/KiKit/latest/fabrication/intro/)
-- [3D printed self-registering solder paste stencils](https://yaqwsx.github.io/KiKit/upstream/latest/stencil/#3d-printed-stencils)
-- [steel stencils with alignment jig](https://yaqwsx.github.io/KiKit/latest/stencil/#steel-stencils)
-- create powerfull shell scrips or Makefiles which automates your workflow...
-- ...or invoke the functionality via [GUI in KiCAD](https://yaqwsx.github.io/KiKit/latest/panelization/gui/).
+- 通过附加电路板和基板碎片（连接桥）创建拼板
+- 支持任意形状的电路板
+- 轻松创建邮票孔 / V-CUT
+- 与手工创建拼板相比，您的拼板将能通过 DRC（因为使用 KiKit 时，同一电路板不同实例的走线拥有不同的网络）
+- 如果您在一个文件中有多个电路板，可以将其分离
+- 简化 [KiCAD 多板项目](https://yaqwsx.github.io/KiKit/latest/multiboard/)
+- [自动导出 Gerber 和贴片数据](https://yaqwsx.github.io/KiKit/latest/fabrication/intro/)
+- [3D 打印自定位焊膏钢网](https://yaqwsx.github.io/KiKit/upstream/latest/stencil/#3d-printed-stencils)
+- [带定位治具的钢网](https://yaqwsx.github.io/KiKit/latest/stencil/#steel-stencils)
+- 创建强大的 shell 脚本或 Makefile 来自动化您的工作流程……
+- ……或通过 [KiCAD 中的 GUI](https://yaqwsx.github.io/KiKit/latest/panelization/gui/) 调用功能。
 
-## How To Use It?
+## 如何使用？
 
-Start with reading the [panelization
-documentation](https://yaqwsx.github.io/KiKit/latest/panelization/intro/). This
-page will you guide through CLI, GUI and scripting usage. Also don't miss the
-[examples](https://yaqwsx.github.io/KiKit/latest/panelization/examples/).
-There is also a quick note on how to use [panelization action
-plugin](https://yaqwsx.github.io/KiKit/latest/panelization/gui/). If you are
-interested in generating solder paste stencils, see [Stencil
-documentation](https://yaqwsx.github.io/KiKit/latest/stencil/)
+首先阅读[拼板文档](https://yaqwsx.github.io/KiKit/latest/panelization/intro/)。该页面将指导您了解 CLI、GUI 和脚本的使用方法。也请务必查看[示例](https://yaqwsx.github.io/KiKit/latest/panelization/examples/)。还有一份关于如何使用[拼板操作插件](https://yaqwsx.github.io/KiKit/latest/panelization/gui/)的简要说明。如果您对生成焊膏钢网感兴趣，请参阅[钢网文档](https://yaqwsx.github.io/KiKit/latest/stencil/)。
 
-## Acknowledgements
+## 致谢
 
-The project is supported by:
+本项目的支持者：
 
-- [My GitHub sponsors](https://github.com/sponsors/yaqwsx) and
+- [我的 GitHub 赞助者](https://github.com/sponsors/yaqwsx) 以及
 - [<img src="https://nlnet.nl/logo/banner.svg" width="150"/>](https://nlnet.nl/project/KiKit/#ack)
 
-## KiKit Is Broken or Does Not Work as Expected
+## KiKit 无法正常工作或表现异常？
 
-Please, first check [FAQ](https://yaqwsx.github.io/KiKit/latest/faq/). If you have not found answer for your
-problem there, feel free to open an issue on GitHub.
+请先查看[常见问题](https://yaqwsx.github.io/KiKit/latest/faq/)。如果您的问题在那里没有找到答案，欢迎在 GitHub 上提出 issue。
 
-If you would like to have a feature in KiKit that is currently not on a roadmap,
-or if you need to prepare custom panelization script (e.g., multi-design panels,
-panels with specific arrangement), you can consider hiring me to do the job.
-Just reach out to me via e-mail and we can discuss further details.
+如果您希望 KiKit 拥有当前路线图中没有的功能，或者需要准备自定义拼板脚本（例如多设计拼板、特定排列的拼板），可以考虑雇佣我来完成这项工作。请通过电子邮件联系我，我们可以进一步讨论细节。
