@@ -709,9 +709,6 @@ class Panel:
         # Remove V-cuts keepouts
         for keepout in keepouts:
             self.board.Remove(keepout)
-        # Remove edges
-        for edge in panelEdges:
-            self.board.Remove(edge)
 
         # Handle zone refilling in a separate board
         reloadProject(self.getProFilepath())

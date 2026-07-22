@@ -730,11 +730,33 @@ class Substrate:
                 items += self._serializeRing(interior, reconstructArcs)
         return items
 
+    def _removeCollinearPoints(self, coords, tolerance=fromMm(0.01)):
+        if len(coords) < 3:
+            return coords
+        result = [coords[0]]
+        for i in range(1, len(coords) - 1):
+            prev = np.array(result[-1])
+            curr = np.array(coords[i])
+            next_ = np.array(coords[i + 1])
+            line_vec = next_ - prev
+            line_len = np.linalg.norm(line_vec)
+            if line_len == 0:
+                continue
+            point_vec = curr - prev
+            cross_mag = abs(np.cross(line_vec, point_vec))
+            distance = cross_mag / line_len
+            if distance > tolerance:
+                result.append(coords[i])
+        result.append(coords[-1])
+        return result
+
     def _serializeRing(self, ring, reconstructArcs):
         TOLERANCE = fromMm(0.01)
         coords = ring.coords
         if coords[0] != coords[-1]:
             raise RuntimeError("Ring is incomplete")
+
+        coords = self._removeCollinearPoints(coords, TOLERANCE)
 
         # Always start with the longes semgent (so we do not start in the middle
         # of an arc if possible)
