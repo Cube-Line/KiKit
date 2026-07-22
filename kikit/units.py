@@ -101,6 +101,8 @@ def readLength(unitStr):
         return BaseValue(unitStr, f"{unitStr}nm")
     if not isinstance(unitStr, str):
         raise RuntimeError(f"Got '{unitStr}', a length with units was expected")
+    if UNIT_SPLIT.match(unitStr) is None:
+        unitStr += "mm"
     return BaseValue(readUnit(unitDir, unitStr), unitStr)
 
 def readAngle(unitStr: str) -> BaseAngle:

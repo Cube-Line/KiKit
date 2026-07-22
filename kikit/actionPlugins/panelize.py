@@ -696,6 +696,7 @@ class PanelizeDialog(wx.Dialog):
         preset = loadPresetChain([":default"])
         if includeInput:
             preset["input"] = {}
+            preset["output"] = {}
         for name, section in self.sections.items():
             if name.lower() not in preset:
                 continue
