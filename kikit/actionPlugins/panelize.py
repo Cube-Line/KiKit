@@ -2,7 +2,7 @@ import time
 import traceback
 from kikit.defs import EDA_TEXT_HJUSTIFY_T, EDA_TEXT_VJUSTIFY_T
 import pcbnew
-from kikit.panelize_ui_impl import loadPresetChain, obtainPreset, mergePresets
+from kikit.panelize_ui_impl import loadPresetChain, obtainPreset, mergePresets, encodePreset
 from kikit import panelize_ui
 from kikit.panelize import NonFatalErrors, appendItem
 from kikit.common import PKG_BASE, findBoardBoundingBox, fromMm
@@ -834,8 +834,13 @@ def _loadPreset():
 def _savePreset(preset):
     try:
         os.makedirs(os.path.dirname(PRESET_STATE_PATH), exist_ok=True)
+        safe = {}
+        for section, values in preset.items():
+            safe[section] = {}
+            for key, value in values.items():
+                safe[section][key] = encodePreset(value)
         with open(PRESET_STATE_PATH, "w", encoding="utf-8") as f:
-            json.dump(preset, f, indent=2)
+            json.dump(safe, f, indent=2)
     except OSError:
         pass
 

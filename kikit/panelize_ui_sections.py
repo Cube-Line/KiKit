@@ -200,6 +200,8 @@ class SLayer(SChoiceBase):
 
 class SList(SectionBase):
     def validate(self, x: str) -> Any:
+        if isinstance(x, list):
+            return [str(v).strip() for v in x]
         return [v.strip() for v in x.split(",")]
 
 class SLayerList(SList):
