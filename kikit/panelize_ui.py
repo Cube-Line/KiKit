@@ -242,10 +242,6 @@ def doPanelization(input, output, preset, plugins=[]):
     from pcbnew import LoadBoard
     from itertools import chain
 
-    if preset["debug"]["drawtabfail"]:
-        import kikit.substrate
-        kikit.substrate.TABFAIL_VISUAL = True
-
     board = LoadBoard(input)
     if preset["debug"]["deterministic"]:
         pcbnew.KIID.SeedGenerator(42)
@@ -257,7 +253,6 @@ def doPanelization(input, output, preset, plugins=[]):
 
     useHookPlugins(lambda x: x.prePanelSetup(panel))
 
-    # Register extra footprints for annotations
     for tabFootprint in preset["tabs"]["tabfootprints"]:
         panel.annotationReader.registerTab(tabFootprint.lib, tabFootprint.footprint)
 

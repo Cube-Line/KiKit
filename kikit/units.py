@@ -101,6 +101,8 @@ def readLength(unitStr):
         return BaseValue(unitStr, f"{unitStr}nm")
     if not isinstance(unitStr, str):
         raise RuntimeError(f"Got '{unitStr}', a length with units was expected")
+    if unitStr == "":
+        return BaseValue(0, "0mm")
     if UNIT_SPLIT.match(unitStr) is None:
         unitStr += "mm"
     return BaseValue(readUnit(unitDir, unitStr), unitStr)
@@ -115,6 +117,8 @@ def readAngle(unitStr: str) -> BaseAngle:
         return BaseAngle(pcbnew.EDA_ANGLE(unitStr, pcbnew.TENTHS_OF_A_DEGREE_T), f"{unitStr / 10} deg")
     if not isinstance(unitStr, str):
         raise RuntimeError(f"Got '{unitStr}', an angle with units was expected")
+    if unitStr == "":
+        return BaseAngle(pcbnew.EDA_ANGLE(0, pcbnew.TENTHS_OF_A_DEGREE_T), "0deg")
     return BaseAngle(readUnit(unitDir, unitStr), unitStr)
 
 def readPercents(unitStr):

@@ -67,15 +67,22 @@ def combineBoundingBoxes(a, b):
 def collectEdges(board, layerId, sourceArea=None):
     """ Collect edges in sourceArea on given layer including footprints """
     edges = []
-    for edge in chain(board.GetDrawings(), *[m.GraphicalItems() for m in board.GetFootprints()]):
-        if edge.GetLayer() != layerId:
+    try:
+        drawings = list(board.GetDrawings())
+    except Exception:
+        drawings = []
+    for edge in chain(drawings, *[list(m.GraphicalItems()) for m in board.GetFootprints()]):
+        try:
+            if edge.GetLayer() != layerId:
+                continue
+            if isinstance(edge, pcbnew.PCB_DIMENSION_BASE):
+                continue
+            if isinstance(edge, pcbnew.PCB_TEXT):
+                continue
+            if not sourceArea or fitsIn(edge.GetBoundingBox(), sourceArea):
+                edges.append(edge)
+        except Exception:
             continue
-        if isinstance(edge, pcbnew.PCB_DIMENSION_BASE):
-            continue
-        if isinstance(edge, pcbnew.PCB_TEXT):
-            continue
-        if not sourceArea or fitsIn(edge.GetBoundingBox(), sourceArea):
-            edges.append(edge)
     return edges
 
 def collectItems(boardCollection, sourceArea):

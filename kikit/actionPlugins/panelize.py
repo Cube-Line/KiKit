@@ -1,20 +1,18 @@
 import time
 import traceback
-from kikit.defs import EDA_TEXT_HJUSTIFY_T, EDA_TEXT_VJUSTIFY_T
 import pcbnew
 from kikit.panelize_ui_impl import loadPresetChain, obtainPreset, mergePresets, encodePreset
 from kikit import panelize_ui
-from kikit.panelize import NonFatalErrors, appendItem
-from kikit.common import PKG_BASE, findBoardBoundingBox, fromMm
+from kikit.panelize import NonFatalErrors
+from kikit.common import PKG_BASE
 from .common import initDialog, destroyDialog
 import kikit.panelize_ui_sections
 import wx
 import json
 import tempfile
-import shutil
 import os
+import subprocess
 from threading import Thread
-from itertools import chain
 
 PLATFORMS = ["Linux/MacOS", "Windows"]
 
@@ -171,73 +169,6 @@ def presetDifferential(source, target):
             result[sectionName] = updateKeys
     return result
 
-
-def transplateBoard(source, target, update=lambda x: None):
-    CLEAR_MSG = "正在清除旧电路板"
-    RENDER_MSG = "正在渲染新电路板"
-
-    target.ClearProject()
-    target.DeleteAllFootprints()
-
-    items = chain(
-        list(target.GetDrawings()),
-        list(target.GetFootprints()),
-        list(target.GetTracks()),
-        list(target.Zones()))
-    for x in items:
-        update(CLEAR_MSG)
-        target.Remove(x)
-
-    for x in list(target.GetNetInfo().NetsByNetcode().values()):
-        update(CLEAR_MSG)
-        target.Remove(x)
-
-    update(RENDER_MSG)
-    target.SetProperties(source.GetProperties())
-    update(RENDER_MSG)
-    target.SetPageSettings(source.GetPageSettings())
-    update(RENDER_MSG)
-    target.SetTitleBlock(source.GetTitleBlock())
-    for x in source.GetDrawings():
-        update(RENDER_MSG)
-        appendItem(target, x)
-    for x in source.GetFootprints():
-        update(RENDER_MSG)
-        appendItem(target, x)
-    for x in source.GetTracks():
-        update(RENDER_MSG)
-        appendItem(target, x)
-    for x in source.Zones():
-        update(RENDER_MSG)
-        appendItem(target, x)
-
-    update(RENDER_MSG)
-    d = target.GetDesignSettings()
-    d.CloneFrom(source.GetDesignSettings())
-    target.SetEnabledLayers(source.GetEnabledLayers())
-
-
-
-def drawTemporaryNotification(board, sourceFilename):
-    try:
-        bbox = findBoardBoundingBox(board)
-    except Exception:
-        # If the output is empty...
-        bbox = pcbnew.BOX2I(pcbnew.VECTOR2I(0, 0), pcbnew.VECTOR2I(0, 0))
-
-    lset = board.GetEnabledLayers()
-    lset.AddLayer(pcbnew.Margin)
-    board.SetEnabledLayers(lset)
-
-    text = pcbnew.PCB_TEXT(board)
-    text.SetLayer(pcbnew.Margin)
-    text.SetText(f"仅预览。拼板已保存至 {sourceFilename}")
-    text.SetPosition(pcbnew.VECTOR2I(bbox.GetX() + bbox.GetWidth() // 2, bbox.GetY() + bbox.GetHeight()) + pcbnew.VECTOR2I(0, fromMm(2)))
-    text.SetTextThickness(fromMm(0.4))
-    text.SetTextSize(pcbnew.VECTOR2I(fromMm(3), fromMm(3)))
-    text.SetVertJustify(EDA_TEXT_VJUSTIFY_T.GR_TEXT_VJUSTIFY_TOP)
-    text.SetHorizJustify(EDA_TEXT_HJUSTIFY_T.GR_TEXT_HJUSTIFY_CENTER)
-    board.Add(text)
 
 
 class SFile():
@@ -590,30 +521,55 @@ class PanelizeDialog(wx.Dialog):
                 self.progressDlg.Refresh()
             wx.GetApp().Yield()
 
-    def _panelizationRoutine(self, tempdir, input, panelFile, preset):
-        panelize_ui.doPanelization(input, panelFile, preset)
+    def _runSubprocessPanelization(self, tempdir, input, panelFile, presetArgs):
+        import subprocess, sys, json, site
+        with open("/tmp/kikit_args_debug.json", "w") as f:
+            json.dump(presetArgs, f, indent=2)
+        argsPath = os.path.join(tempdir, "panelize_args.json")
+        with open(argsPath, "w", encoding="utf-8") as f:
+            json.dump(presetArgs, f)
+        userSp = site.getusersitepackages()
+        thisDir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        spPath = json.dumps(userSp) if userSp else json.dumps(thisDir)
+        script = (
+            "import sys, json\n"
+            "sys.path.insert(0, %s)\n" % spPath +
+            "from kikit.panelize_ui import doPanelization\n"
+            "from kikit.panelize_ui_impl import obtainPreset\n"
+            "with open(%r, 'r') as f:\n" % argsPath +
+            "    args = json.load(f)\n"
+            "preset = obtainPreset([], **args)\n"
+            "doPanelization(%r, %r, preset)\n" % (input, panelFile)
+        )
+        proc = subprocess.Popen(
+            [sys.executable, "-c", script],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = proc.communicate(timeout=300)
+        if not os.path.isfile(panelFile):
+            raise RuntimeError(
+                "拼板子进程失败（返回码 %d）:\n%s" % (
+                    proc.returncode, err.decode()[:2000]))
 
-        # KiCAD 6 does something strange here, so we will load an empty
-        # file if we read it directly, but we can always make a copy and
-        # read that. Copying a file can be lengthy, so we will copy the
-        # file in a thread.
-        copyPanelName = os.path.join(tempdir, "panel-copy.kicad_pcb")
-        shutil.copy(panelFile, copyPanelName)
-        try:
-            shutil.copy(replaceExt(panelFile, ".kicad_pro"), replaceExt(copyPanelName, "kicad_pro"))
-            shutil.copy(replaceExt(panelFile, ".kicad_prl"), replaceExt(copyPanelName, "kicad_prl"))
-        except FileNotFoundError:
-            # We don't care if we didn't manage to copy the files
-            pass
-        self.temporary_panel = pcbnew.LoadBoard(copyPanelName)
+    def _panelizationRoutine(self, tempdir, input, panelFile, presetArgs):
+        self._runSubprocessPanelization(tempdir, input, panelFile, presetArgs)
 
     def _pulseWhilePcbnewRefresh(self):
         while not self.refreshDone:
             time.sleep(1/50)
             self._updatePanelizationProgress("Pcbnew 正在更新预览")
 
+    def _closeOldFrame(self):
+        for window in wx.GetTopLevelWindows():
+            if window is not self and window.IsShown():
+                try:
+                    window.Close(True)
+                except Exception:
+                    pass
+        self.board = None
 
     def OnPanelize(self, event):
+        import faulthandler
+        faulthandler.enable(file=open("/home/cubeline/.config/kikit/faulthandler.log", "w"))
         with tempfile.TemporaryDirectory(prefix="kikit") as dirname:
             try:
                 self.progressDlg = wx.ProgressDialog(
@@ -623,7 +579,6 @@ class PanelizeDialog(wx.Dialog):
                 self.progressDlg.Show()
 
                 args = self.kikitArgs()
-                preset = obtainPreset([], **args)
                 input = self.sections["Input"].items["Input file"].getValue()
                 if len(input) == 0:
                     dlg = wx.MessageDialog(
@@ -638,7 +593,11 @@ class PanelizeDialog(wx.Dialog):
                     dlg.ShowModal()
                     dlg.Destroy()
                     return
-                if os.path.realpath(input) == os.path.realpath(pcbnew.GetBoard().GetFileName()):
+                try:
+                    boardPath = self.board.GetFileName() if self.board is not None else None
+                except Exception:
+                    boardPath = None
+                if boardPath is not None and os.path.realpath(input) == os.path.realpath(boardPath):
                     dlg = wx.MessageDialog(
                         None,
                         f"文件 {input} 与当前打开的电路板相同，无法继续。\n\n" + \
@@ -648,10 +607,10 @@ class PanelizeDialog(wx.Dialog):
                     dlg.Destroy()
                     return
 
-                # We run as much as possible in a separate thread to not stall
-                # the UI...
+                # Run panelization in a subprocess to avoid KiCad 10 heap
+                # corruption from concurrent _pcbnew C++ operations.
                 thread = ExceptionThread(target=self._panelizationRoutine,
-                                         args=(dirname, input, panelFile, preset))
+                                         args=(dirname, input, panelFile, args))
                 thread.daemon = True
                 thread.start()
                 while True:
@@ -662,14 +621,13 @@ class PanelizeDialog(wx.Dialog):
                 if thread.exception:
                     raise thread.exception
 
-                # ...however, transplate board and pcbnew.Refresh has to happen
-                # in the main thread
-                transplateBoard(self.temporary_panel, self.board, self._updatePanelizationProgress)
-                drawTemporaryNotification(self.board, panelFile)
-                self._updatePanelizationProgress("Pcbnew 即将刷新拼板，界面可能会卡顿", force=True)
-                pcbnew.Refresh()
                 self._updatePanelizationProgress("完成", force=True)
                 self.dirty = True
+                try:
+                    subprocess.Popen(['pcbnew', panelFile])
+                except Exception:
+                    pass
+                self._closeOldFrame()
             except Exception as e:
                 dlg = wx.MessageDialog(
                     None, f"无法执行：\n\n{e}", "错误", wx.OK)
@@ -859,7 +817,14 @@ class PanelizePlugin(pcbnew.ActionPlugin):
 
     def Run(self):
         try:
-            if not self.dirty and not pcbnew.GetBoard().IsEmpty():
+            board = pcbnew.GetBoard()
+            if board is None:
+                dlg = wx.MessageDialog(
+                    None, "没有打开的电路板。请先打开一个电路板文件。", "错误", wx.OK)
+                dlg.ShowModal()
+                dlg.Destroy()
+                return
+            if not self.dirty and not board.IsEmpty():
                 dlg = wx.MessageDialog(
                     None,
                     "当前打开的电路板不为空，将被拼板替换。是否继续？\n\n" + \
@@ -874,7 +839,7 @@ class PanelizePlugin(pcbnew.ActionPlugin):
                 self.preset = preset
                 self.dirty = self.dirty or dirty
                 _savePreset(self.preset)
-            dialog = initDialog(lambda: PanelizeDialog(None, pcbnew.GetBoard(), self.preset, onClose))
+            dialog = initDialog(lambda: PanelizeDialog(None, board, self.preset, onClose))
             dialog.Show()
         except Exception as e:
             dlg = wx.MessageDialog(
