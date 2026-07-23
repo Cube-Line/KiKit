@@ -265,7 +265,7 @@ def buildLayout(preset, panel, sourceBoard, sourceArea):
                 bakeText=layout["baketext"], bakeRef=layout["bakeref"])
             framingSubstrates = dummyFramingSubstrate(substrates, preset)
             panel.buildPartitionLineFromBB(framingSubstrates)
-            backboneCuts = buildBackBone(layout, panel, substrates, framing)
+            backboneCuts = buildBackBone(layout, panel, substrates, framing, preset["cuts"]["type"])
             return substrates, framingSubstrates, backboneCuts
         if type == "plugin":
             lPlugin = layout["code"](preset, layout["arg"], layout["renamenet"],
@@ -316,15 +316,22 @@ def buildTabs(preset, panel, substrates, boundarySubstrates):
     except KeyError as e:
         raise PresetError(f"Missing parameter '{e}' in section 'tabs'")
 
-def buildBackBone(layout, panel, substrates, frameSpace):
+def buildBackBone(layout, panel, substrates, frameSpace, cutsType=None):
     """
     Append backbones to the panel. Return backbone cuts.
+    When cutsType is 'vcuts', generate full-length V-cut lines along
+    partition lines even when backbone thickness is zero.
     """
     try:
-        return panel.renderBackbone(layout["vbackbone"], layout["hbackbone"],
+        backboneCuts = list(panel.renderBackbone(layout["vbackbone"], layout["hbackbone"],
                                     layout["vbonecut"], layout["hbonecut"],
                                     layout["vboneskip"], layout["hboneskip"],
-                                    layout["vbonefirst"], layout["hbonefirst"])
+                                    layout["vbonefirst"], layout["hbonefirst"]))
+        if cutsType == "vcuts":
+            for line in panel.backboneLines:
+                if not line.is_empty and line.length > 0:
+                    backboneCuts.append(line)
+        return backboneCuts
     except KeyError as e:
         raise PresetError(f"Missing parameter '{e}' in section 'layout'")
 

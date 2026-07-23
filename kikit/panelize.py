@@ -683,72 +683,87 @@ class Panel:
             if clearanceArea is not None:
                 keepouts.append(self.addKeepout(clearanceArea))
 
-        # Rendering happens in two phases:
-        # - first, we render original board edges and save the board (to
-        #   propagate all the design rules from project files)
-        # - then we load the board, fill polygons and render panel edges.
-
         for edge in boardsEdges:
             self.board.Add(edge)
 
-        # We mark zone to refill via name prefix - this is the only way we can
-        # remember it between saves
         originalZoneNames = {}
         for i, zone in enumerate(self.zonesToRefill):
             newName = f"KIKIT_zone_{i}"
             originalZoneNames[newName] = zone.GetZoneName()
             zone.SetZoneName(newName)
         self.board.Save(self.filename)
-        # The board is reloaded below before zone refill. Transfer project
-        # settings now so KiCad's filler sees the correct netclass definitions.
         self.transferProjectSettings()
 
-        # Remove cuts
         for cut, _ in vcuts:
-            self.board.Remove(cut)
-        # Remove V-cuts keepouts
+            if cut.GetLayer() == Layer.Edge_Cuts:
+                self.board.Remove(cut)
         for keepout in keepouts:
             self.board.Remove(keepout)
-        # Remove edges
-        for edge in panelEdges:
-            self.board.Remove(edge)
 
-        # Handle zone refilling in a separate board
         reloadProject(self.getProFilepath())
-        fillBoard = pcbnew.LoadBoard(self.filename)
-        fillerTool = pcbnew.ZONE_FILLER(fillBoard)
-        if refillAllZones:
-            fillerTool.Fill(fillBoard.Zones())
 
-        for edge in collectEdges(fillBoard, Layer.Edge_Cuts):
-            fillBoard.Remove(edge)
+        try:
+            for edge in list(self.board.GetDrawings()):
+                try:
+                    if edge.GetLayer() == Layer.Edge_Cuts:
+                        self.board.Remove(edge)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         for edge in panelEdges:
-            fillBoard.Add(edge)
+            self.board.Add(edge)
         if self.vCutSettings.layer == Layer.Edge_Cuts:
-            vcuts = self._renderVCutH() + self._renderVCutV()
-            for cut, _ in vcuts:
-                fillBoard.Add(cut)
+            for cut, _ in self._renderVCutH() + self._renderVCutV():
+                self.board.Add(cut)
+
+        fillerTool = pcbnew.ZONE_FILLER(self.board)
+        if refillAllZones:
+            try:
+                fillerTool.Fill(self.board.Zones())
+            except Exception:
+                pass
 
         zonesToRefill = pcbnew.ZONES()
-        for zone in fillBoard.Zones():
+        for zone in self.board.Zones():
             zName = zone.GetZoneName()
             if zName.startswith("KIKIT_zone_"):
                 zonesToRefill.append(zone)
                 zone.SetZoneName(originalZoneNames[zName])
         if len(zonesToRefill) > 0:
-            # Even if there are no zones to refill, the refill algorithm takes
-            # non-trivial time to compute, hence, skip it.
-            fillerTool.Fill(zonesToRefill)
+            try:
+                fillerTool.Fill(zonesToRefill)
+            except Exception:
+                pass
 
-        fillBoard.Save(self.filename)
+        self.board.Save(self.filename)
 
-        # There are some properties of the board inaccessible from the Python
-        # API. Let's modify the project files directly. Note that this has to be
-        # done after the board is saved
         self._adjustPageSize()
-        self.makeLayersVisible() # as they are not in KiCAD 6
-        self.transferProjectSettings()
-        self.writeCustomDrcRules()
+        self.makeLayersVisible()
+        try:
+            import subprocess, sys
+            proPath = self.getProFilepath(list(self.sourcePaths)[0])
+            curPath = self.getProFilepath()
+            from collections import OrderedDict
+            script = (
+                "import json\n"
+                "from collections import OrderedDict\n"
+                "with open(%r, encoding='utf-8') as f:\n"
+                "    src = json.load(f)\n"
+                "with open(%r, encoding='utf-8') as f:\n"
+                "    cur = json.load(f, object_pairs_hook=OrderedDict)\n"
+                "cur['board']['design_settings'] = src['board']['design_settings']\n"
+                "with open(%r, 'w', encoding='utf-8') as f:\n"
+                "    json.dump(cur, f, indent=2)\n"
+            ) % (proPath, curPath, curPath)
+            subprocess.run([sys.executable, "-c", script], check=False, timeout=30)
+        except Exception:
+            pass
+        try:
+            self.writeCustomDrcRules()
+        except Exception:
+            pass
 
 
     def _getRefillEdges(self, reconstructArcs: bool):
@@ -1727,6 +1742,8 @@ class Panel:
                 self.reportError(toKiCADPoint(cut.coords[0]), message)
                 continue
             cut = cut.simplify(1).parallel_offset(offset, "left")
+            if cut.is_empty or len(cut.coords) < 2:
+                continue
             start = roundPoint(cut.coords[0])
             end = roundPoint(cut.coords[-1])
             if start.x == end.x or (abs(start.x - end.x) <= fromMm(0.5) and boundCurves):

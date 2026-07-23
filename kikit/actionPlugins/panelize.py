@@ -1,22 +1,22 @@
 import time
 import traceback
-from kikit.defs import EDA_TEXT_HJUSTIFY_T, EDA_TEXT_VJUSTIFY_T
 import pcbnew
-from kikit.panelize_ui_impl import loadPresetChain, obtainPreset, mergePresets
+from kikit.panelize_ui_impl import loadPresetChain, obtainPreset, mergePresets, encodePreset
 from kikit import panelize_ui
-from kikit.panelize import NonFatalErrors, appendItem
-from kikit.common import PKG_BASE, findBoardBoundingBox, fromMm
+from kikit.panelize import NonFatalErrors
+from kikit.common import PKG_BASE
 from .common import initDialog, destroyDialog
 import kikit.panelize_ui_sections
 import wx
 import json
 import tempfile
-import shutil
 import os
+import subprocess
 from threading import Thread
-from itertools import chain
 
 PLATFORMS = ["Linux/MacOS", "Windows"]
+
+PRESET_STATE_PATH = os.path.expanduser("~/.config/kikit/panelize_state.json")
 
 class ExceptionThread(Thread):
     def run(self):
@@ -47,74 +47,6 @@ def presetDifferential(source, target):
         if len(updateKeys) > 0:
             result[sectionName] = updateKeys
     return result
-
-
-def transplateBoard(source, target, update=lambda x: None):
-    CLEAR_MSG = "Clearing the old board in UI"
-    RENDER_MSG = "Rendering the new board in UI"
-
-    target.ClearProject()
-    target.DeleteAllFootprints()
-
-    items = chain(
-        list(target.GetDrawings()),
-        list(target.GetFootprints()),
-        list(target.GetTracks()),
-        list(target.Zones()))
-    for x in items:
-        update(CLEAR_MSG)
-        target.Remove(x)
-
-    for x in list(target.GetNetInfo().NetsByNetcode().values()):
-        update(CLEAR_MSG)
-        target.Remove(x)
-
-    update(RENDER_MSG)
-    target.SetProperties(source.GetProperties())
-    update(RENDER_MSG)
-    target.SetPageSettings(source.GetPageSettings())
-    update(RENDER_MSG)
-    target.SetTitleBlock(source.GetTitleBlock())
-    for x in source.GetDrawings():
-        update(RENDER_MSG)
-        appendItem(target, x)
-    for x in source.GetFootprints():
-        update(RENDER_MSG)
-        appendItem(target, x)
-    for x in source.GetTracks():
-        update(RENDER_MSG)
-        appendItem(target, x)
-    for x in source.Zones():
-        update(RENDER_MSG)
-        appendItem(target, x)
-
-    update(RENDER_MSG)
-    d = target.GetDesignSettings()
-    d.CloneFrom(source.GetDesignSettings())
-    target.SetEnabledLayers(source.GetEnabledLayers())
-
-
-
-def drawTemporaryNotification(board, sourceFilename):
-    try:
-        bbox = findBoardBoundingBox(board)
-    except Exception:
-        # If the output is empty...
-        bbox = pcbnew.BOX2I(pcbnew.VECTOR2I(0, 0), pcbnew.VECTOR2I(0, 0))
-
-    lset = board.GetEnabledLayers()
-    lset.AddLayer(pcbnew.Margin)
-    board.SetEnabledLayers(lset)
-
-    text = pcbnew.PCB_TEXT(board)
-    text.SetLayer(pcbnew.Margin)
-    text.SetText(f"PREVIEW ONLY. PANEL SAVED IN {sourceFilename}")
-    text.SetPosition(pcbnew.VECTOR2I(bbox.GetX() + bbox.GetWidth() // 2, bbox.GetY() + bbox.GetHeight()) + pcbnew.VECTOR2I(0, fromMm(2)))
-    text.SetTextThickness(fromMm(0.4))
-    text.SetTextSize(pcbnew.VECTOR2I(fromMm(3), fromMm(3)))
-    text.SetVertJustify(EDA_TEXT_VJUSTIFY_T.GR_TEXT_VJUSTIFY_TOP)
-    text.SetHorizJustify(EDA_TEXT_HJUSTIFY_T.GR_TEXT_HJUSTIFY_CENTER)
-    board.Add(text)
 
 
 class SFile():
@@ -280,8 +212,6 @@ class SectionGui():
             ch = widget.showIfRelevant(preset)
             changed = changed or ch
         if changed:
-            # This is hacky, but it is the only reliable way to force collapsible
-            # pane to correctly adjust its size
             self.container.Collapse()
             self.container.Expand()
         return changed
@@ -293,40 +223,48 @@ class SectionGui():
                 if widget.parameter.isGuiRelevant(preset)}
 
 
-class PanelizeDialog(wx.Dialog):
-    def __init__(self, parent=None, board=None, preset=None):
-        wx.Dialog.__init__(
-            self, parent, title=f'Panelize a board  (version {kikit.__version__})',
-            style=wx.DEFAULT_DIALOG_STYLE)
-        self.Bind(wx.EVT_CLOSE, self.OnClose, id=self.GetId())
+class PanelizeDialog(wx.Frame):
+    def __init__(self, parent=None, board=None, preset=None, onClose=None):
+        wx.Frame.__init__(
+            self, parent, title=f"KiKit Panelize (v{kikit.__version__})",
+            style=wx.DEFAULT_FRAME_STYLE)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
         self.board = board
         self.dirty = False
         self.progressDlg = None
         self.lastPulse = time.time()
+        self._onClose = onClose
 
         topMostBoxSizer = wx.BoxSizer(wx.VERTICAL)
 
-        middleSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.splitter = wx.SplitterWindow(self, wx.ID_ANY, style=wx.SP_LIVE_UPDATE)
+        self.splitter.SetMinimumPaneSize(200)
 
         maxDisplayArea = wx.Display().GetClientArea()
         self.maxDialogSize = wx.Size(
             min(500, maxDisplayArea.Width),
             min(800, maxDisplayArea.Height - 200))
 
+        leftPanel = wx.Panel(self.splitter)
+        leftSizer = wx.BoxSizer(wx.VERTICAL)
         self.scrollWindow = wx.ScrolledWindow(
-            self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.VSCROLL)
-        self.scrollWindow.SetSizeHints(self.maxDialogSize, wx.Size(self.maxDialogSize.width, -1))
+            leftPanel, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.VSCROLL)
         self.scrollWindow.SetScrollRate(5, 5)
         self._buildSections(self.scrollWindow)
-        middleSizer.Add(self.scrollWindow, 0, wx.EXPAND | wx.ALL, 5)
+        leftSizer.Add(self.scrollWindow, 1, wx.EXPAND)
+        leftPanel.SetSizer(leftSizer)
 
-        self._buildOutputSections(middleSizer)
+        rightPanel = wx.Panel(self.splitter)
+        self._buildOutputSections(rightPanel)
 
-        topMostBoxSizer.Add(middleSizer, 1, wx.EXPAND | wx.ALL, 5)
+        self.splitter.SplitVertically(leftPanel, rightPanel, 480)
+
+        topMostBoxSizer.Add(self.splitter, 1, wx.EXPAND | wx.ALL, 5)
         self._buildBottomButtons(topMostBoxSizer)
 
         self.SetSizer(topMostBoxSizer)
+        self.SetInitialSize(wx.Size(900, 600))
         self.populateInitialValue(preset)
         self.buildOutputSections()
         self.showOnlyRelevantFields()
@@ -336,54 +274,46 @@ class PanelizeDialog(wx.Dialog):
             self.SetBackgroundColour( wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND))
 
 
-    def _buildOutputSections(self, sizer):
+    def _buildOutputSections(self, parent):
         internalSizer = wx.BoxSizer(wx.VERTICAL)
 
-        cliLabel = wx.StaticText(self, label="KiKit CLI command:",
+        cliLabel = wx.StaticText(parent, label="KiKit CLI command:",
                                  size=wx.DefaultSize, style=wx.ALIGN_LEFT)
         internalSizer.Add(cliLabel, 0, wx.EXPAND | wx.ALL, 2)
 
-        self.platformSelector = wx.Choice(self, wx.ID_ANY, wx.DefaultPosition,
+        self.platformSelector = wx.Choice(parent, wx.ID_ANY, wx.DefaultPosition,
             wx.DefaultSize, PLATFORMS, 0)
         if os.name == "nt":
             self.platformSelector.SetSelection(PLATFORMS.index("Windows"))
         else:
-            self.platformSelector.SetSelection(0) # Choose posix by default
+            self.platformSelector.SetSelection(0)
         self.platformSelector.Bind(wx.EVT_CHOICE, lambda evt: self.buildOutputSections())
-        internalSizer.Add(self.platformSelector, 0, wx.EXPAND | wx.ALL, 2 )
+        internalSizer.Add(self.platformSelector, 0, wx.EXPAND | wx.ALL, 2)
 
         self.kikitCmdWidget = wx.TextCtrl(
-            self, wx.ID_ANY, "KiKit Command", wx.DefaultPosition, wx.DefaultSize,
+            parent, wx.ID_ANY, "KiKit Command", wx.DefaultPosition, wx.DefaultSize,
             wx.TE_MULTILINE | wx.TE_READONLY)
-        self.kikitCmdWidget.SetSizeHints(
-            wx.Size(self.maxDialogSize.width,
-                    self.maxDialogSize.height // 2),
-            wx.Size(self.maxDialogSize.width, -1))
         cmdFont = self.kikitCmdWidget.GetFont()
         cmdFont.SetFamily(wx.FONTFAMILY_TELETYPE)
         self.kikitCmdWidget.SetFont(cmdFont)
-        internalSizer.Add(self.kikitCmdWidget, 0, wx.EXPAND | wx.ALL, 2)
+        internalSizer.Add(self.kikitCmdWidget, 1, wx.EXPAND | wx.ALL, 2)
 
-        jsonLabel = wx.StaticText(self, label="KiKit JSON preset (contains only changed keys):",
+        jsonLabel = wx.StaticText(parent, label="KiKit JSON preset (only changed keys):",
                                   size=wx.DefaultSize, style=wx.ALIGN_LEFT)
         internalSizer.Add(jsonLabel, 0, wx.EXPAND | wx.ALL, 2)
 
         self.kikitJsonWidget = wx.TextCtrl(
-            self, wx.ID_ANY, "KiKit JSON", wx.DefaultPosition, wx.DefaultSize,
+            parent, wx.ID_ANY, "KiKit JSON", wx.DefaultPosition, wx.DefaultSize,
             wx.TE_MULTILINE | wx.TE_READONLY)
-        self.kikitJsonWidget.SetSizeHints(
-            wx.Size(self.maxDialogSize.width,
-                    self.maxDialogSize.height // 2),
-            wx.Size(self.maxDialogSize.width, -1))
         cmdFont = self.kikitJsonWidget.GetFont()
         cmdFont.SetFamily(wx.FONTFAMILY_TELETYPE)
         self.kikitJsonWidget.SetFont(cmdFont)
-        internalSizer.Add(self.kikitJsonWidget, 0, wx.EXPAND | wx.ALL, 2)
+        internalSizer.Add(self.kikitJsonWidget, 1, wx.EXPAND | wx.ALL, 2)
 
         ieButtonsSizer = wx.BoxSizer(wx.HORIZONTAL)
         ieButtonsSizer.Add((0, 0), 1, wx.EXPAND, 5)
 
-        self.importButton = wx.Button(self, wx.ID_ANY, u"Import JSON configuration",
+        self.importButton = wx.Button(parent, wx.ID_ANY, "Import JSON configuration",
             wx.DefaultPosition, wx.DefaultSize, 0)
         try:
             self.importButton.SetBitmap(wx.BitmapBundle(wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN)))
@@ -392,18 +322,18 @@ class PanelizeDialog(wx.Dialog):
         ieButtonsSizer.Add(self.importButton, 0, wx.ALL, 5)
         self.importButton.Bind(wx.EVT_BUTTON, self.onImport)
 
-        self.exportButton = wx.Button(self, wx.ID_ANY, u"Export JSON configuration",
+        self.exportButton = wx.Button(parent, wx.ID_ANY, "Export JSON configuration",
             wx.DefaultPosition, wx.DefaultSize, 0)
         try:
             self.exportButton.SetBitmap(wx.BitmapBundle(wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE)))
         except:
-            self.exportButton.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE))
+            self.exportButton.SetBitmap(wx.BitmapBundle(wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE)))
         ieButtonsSizer.Add(self.exportButton, 0, wx.ALL, 5)
         self.exportButton.Bind(wx.EVT_BUTTON, self.onExport)
 
-        internalSizer.Add(ieButtonsSizer, 1, wx.EXPAND, 5)
+        internalSizer.Add(ieButtonsSizer, 0, wx.EXPAND, 5)
 
-        sizer.Add(internalSizer, 0, wx.EXPAND | wx.ALL, 2)
+        parent.SetSizer(internalSizer)
 
     def _buildSections(self, parentWindow):
         sectionsSizer = wx.BoxSizer(wx.VERTICAL)
@@ -442,13 +372,14 @@ class PanelizeDialog(wx.Dialog):
 
     def OnResize(self):
         self.scrollWindow.GetSizer().Layout()
-        self.scrollWindow.Fit()
         self.scrollWindow.FitInside()
         self.GetSizer().Layout()
-        self.Fit()
+        self.Layout()
 
     def OnClose(self, event):
-        self.EndModal(0)
+        if self._onClose is not None:
+            self._onClose(self.collectPreset(includeInput=True), self.dirty)
+        self.Destroy()
 
     def _updatePanelizationProgress(self, message, force=False):
         self.phase = message
@@ -462,55 +393,79 @@ class PanelizeDialog(wx.Dialog):
                 self.progressDlg.Refresh()
             wx.GetApp().Yield()
 
-    def _panelizationRoutine(self, tempdir, input, panelFile, preset):
-        panelize_ui.doPanelization(input, panelFile, preset)
+    def _runSubprocessPanelization(self, tempdir, input, panelFile, presetArgs):
+        import subprocess, sys, json, site
+        argsPath = os.path.join(tempdir, "panelize_args.json")
+        with open(argsPath, "w", encoding="utf-8") as f:
+            json.dump(presetArgs, f)
+        userSp = site.getusersitepackages()
+        thisDir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        spPath = json.dumps(userSp) if userSp else json.dumps(thisDir)
+        script = (
+            "import sys, json\n"
+            "sys.path.insert(0, %s)\n" % spPath +
+            "from kikit.panelize_ui import doPanelization\n"
+            "from kikit.panelize_ui_impl import obtainPreset\n"
+            "with open(%r, 'r') as f:\n" % argsPath +
+            "    args = json.load(f)\n"
+            "preset = obtainPreset([], **args)\n"
+            "doPanelization(%r, %r, preset)\n" % (input, panelFile)
+        )
+        proc = subprocess.Popen(
+            [sys.executable, "-c", script],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = proc.communicate(timeout=300)
+        if not os.path.isfile(panelFile):
+            raise RuntimeError(
+                "Panelization subprocess failed (exit code %d):\n%s" % (
+                    proc.returncode, err.decode()[:2000]))
 
-        # KiCAD 6 does something strange here, so we will load an empty
-        # file if we read it directly, but we can always make a copy and
-        # read that. Copying a file can be lengthy, so we will copy the
-        # file in a thread.
-        copyPanelName = os.path.join(tempdir, "panel-copy.kicad_pcb")
-        shutil.copy(panelFile, copyPanelName)
-        try:
-            shutil.copy(replaceExt(panelFile, ".kicad_pro"), replaceExt(copyPanelName, "kicad_pro"))
-            shutil.copy(replaceExt(panelFile, ".kicad_prl"), replaceExt(copyPanelName, "kicad_prl"))
-        except FileNotFoundError:
-            # We don't care if we didn't manage to copy the files
-            pass
-        self.temporary_panel = pcbnew.LoadBoard(copyPanelName)
+    def _panelizationRoutine(self, tempdir, input, panelFile, presetArgs):
+        self._runSubprocessPanelization(tempdir, input, panelFile, presetArgs)
 
     def _pulseWhilePcbnewRefresh(self):
         while not self.refreshDone:
             time.sleep(1/50)
             self._updatePanelizationProgress("Pcbnew is updating the preview")
 
+    def _closeOldFrame(self):
+        for window in wx.GetTopLevelWindows():
+            if window is not self and window.IsShown():
+                try:
+                    window.Close(True)
+                except Exception:
+                    pass
+        self.board = None
 
     def OnPanelize(self, event):
         with tempfile.TemporaryDirectory(prefix="kikit") as dirname:
             try:
                 self.progressDlg = wx.ProgressDialog(
-                    "Running kikit", f"Running KiKit:",
+                    "Running KiKit", "Running KiKit:",
                     parent=self)
                 self._updatePanelizationProgress("Starting up")
                 self.progressDlg.Show()
 
                 args = self.kikitArgs()
-                preset = obtainPreset([], **args)
                 input = self.sections["Input"].items["Input file"].getValue()
                 if len(input) == 0:
                     dlg = wx.MessageDialog(
-                        None, f"No input file specified", "Error", wx.OK)
+                        None, "No input file specified", "Error", wx.OK)
                     dlg.ShowModal()
                     dlg.Destroy()
                     return
                 panelFile = self.sections["Output"].items["Output file"].getValue()
                 if len(panelFile) == 0:
                     dlg = wx.MessageDialog(
-                        None, f"No output file specified", "Error", wx.OK)
+                        None, "No output file specified", "Error", wx.OK)
                     dlg.ShowModal()
                     dlg.Destroy()
                     return
-                if os.path.realpath(input) == os.path.realpath(pcbnew.GetBoard().GetFileName()):
+                try:
+                    boardPath = self.board.GetFileName() if self.board is not None else None
+                except Exception:
+                    boardPath = None
+                if boardPath is not None and os.path.realpath(input) == os.path.realpath(boardPath):
                     dlg = wx.MessageDialog(
                         None,
                         f"The file {input} is the same as currently opened board. Cannot continue.\n\n" + \
@@ -520,10 +475,8 @@ class PanelizeDialog(wx.Dialog):
                     dlg.Destroy()
                     return
 
-                # We run as much as possible in a separate thread to not stall
-                # the UI...
                 thread = ExceptionThread(target=self._panelizationRoutine,
-                                         args=(dirname, input, panelFile, preset))
+                                         args=(dirname, input, panelFile, args))
                 thread.daemon = True
                 thread.start()
                 while True:
@@ -534,14 +487,13 @@ class PanelizeDialog(wx.Dialog):
                 if thread.exception:
                     raise thread.exception
 
-                # ...however, transplate board and pcbnew.Refresh has to happen
-                # in the main thread
-                transplateBoard(self.temporary_panel, self.board, self._updatePanelizationProgress)
-                drawTemporaryNotification(self.board, panelFile)
-                self._updatePanelizationProgress("Pcbnew will now refresh panel, the UI might freeze", force=True)
-                pcbnew.Refresh()
                 self._updatePanelizationProgress("Done", force=True)
                 self.dirty = True
+                try:
+                    subprocess.Popen(['pcbnew', panelFile])
+                except Exception:
+                    pass
+                self._closeOldFrame()
             except Exception as e:
                 dlg = wx.MessageDialog(
                     None, f"Cannot perform:\n\n{e}", "Error", wx.OK)
@@ -573,6 +525,7 @@ class PanelizeDialog(wx.Dialog):
         preset = loadPresetChain([":default"])
         if includeInput:
             preset["input"] = {}
+            preset["output"] = {}
         for name, section in self.sections.items():
             if name.lower() not in preset:
                 continue
@@ -695,10 +648,30 @@ class PanelizeDialog(wx.Dialog):
                     style=wx.OK | wx.ICON_ERROR, parent=self)
 
 
+def _loadPreset():
+    try:
+        with open(PRESET_STATE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def _savePreset(preset):
+    try:
+        os.makedirs(os.path.dirname(PRESET_STATE_PATH), exist_ok=True)
+        safe = {}
+        for section, values in preset.items():
+            safe[section] = {}
+            for key, value in values.items():
+                safe[section][key] = encodePreset(value)
+        with open(PRESET_STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump(safe, f, indent=2)
+    except OSError:
+        pass
+
 class PanelizePlugin(pcbnew.ActionPlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.preset = {}
+        self.preset = _loadPreset()
         self.dirty = False
 
     def defaults(self):
@@ -710,8 +683,14 @@ class PanelizePlugin(pcbnew.ActionPlugin):
 
     def Run(self):
         try:
-            dialog = None
-            if not self.dirty and not pcbnew.GetBoard().IsEmpty():
+            board = pcbnew.GetBoard()
+            if board is None:
+                dlg = wx.MessageDialog(
+                    None, "No board is open. Please open a board file first.", "Error", wx.OK)
+                dlg.ShowModal()
+                dlg.Destroy()
+                return
+            if not self.dirty and not board.IsEmpty():
                 dlg = wx.MessageDialog(
                     None,
                     "The currently opened board is not empty and it will be " + \
@@ -723,28 +702,25 @@ class PanelizePlugin(pcbnew.ActionPlugin):
                 dlg.Destroy()
                 if ret == wx.ID_NO:
                     return
-            dialog = initDialog(lambda: PanelizeDialog(None, pcbnew.GetBoard(), self.preset))
-            dialog.ShowModal()
-            self.preset = dialog.collectPreset(includeInput=True)
-            self.dirty = self.dirty or dialog.dirty
+            def onClose(preset, dirty):
+                self.preset = preset
+                self.dirty = self.dirty or dirty
+                _savePreset(self.preset)
+            dialog = initDialog(lambda: PanelizeDialog(None, board, self.preset, onClose))
+            dialog.Show()
         except Exception as e:
             dlg = wx.MessageDialog(
                 None, f"Cannot perform: {e}", "Error", wx.OK)
             dlg.ShowModal()
             dlg.Destroy()
-        finally:
-            destroyDialog(dialog)
 
 
 plugin = PanelizePlugin
 
 if __name__ == "__main__":
-    # Run test dialog
     import json
     app = wx.App()
 
     dialog = PanelizeDialog()
-    dialog.ShowModal()
+    dialog.Show()
     print(json.dumps(dialog.collectPreset(True), indent=4))
-
-
