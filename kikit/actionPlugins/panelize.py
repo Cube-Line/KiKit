@@ -18,7 +18,9 @@ PLATFORMS = ["Linux/MacOS", "Windows"]
 
 PRESET_STATE_PATH = os.path.expanduser("~/.config/kikit/panelize_state.json")
 
-SECTION_DISPLAY = {
+_USE_ZH = os.environ.get("LANG", "").startswith("zh")
+
+SECTION_DISPLAY = {} if not _USE_ZH else {
     "Input": "输入",
     "Output": "输出",
     "Layout": "布局",
@@ -38,7 +40,7 @@ SECTION_DISPLAY = {
     "Debug": "调试",
 }
 
-PARAM_DISPLAY = {
+PARAM_DISPLAY = {} if not _USE_ZH else {
     "Input file": "输入文件",
     "Output file": "输出文件",
     "type": "类型",
@@ -171,6 +173,9 @@ def presetDifferential(source, target):
 
 
 
+def _tr(en, zh):
+    return zh if _USE_ZH else en
+
 class SFile():
     def __init__(self, nameFilter):
         self.nameFilter = nameFilter
@@ -183,13 +188,13 @@ class SFile():
 class SInputFile(SFile):
     def __init__(self, nameFilter):
         super().__init__(nameFilter)
-        self.description = "输入文件"
+        self.description = _tr("Input file", "输入文件")
         self.isGuiRelevant = lambda section: True
 
 class SOuputFile(SFile):
     def __init__(self, nameFilter):
         super().__init__(nameFilter)
-        self.description = "输出文件"
+        self.description = _tr("Output file", "输出文件")
         self.isGuiRelevant = lambda section: True
 
 class ParameterWidgetBase:
@@ -349,12 +354,13 @@ class SectionGui():
                 if widget.parameter.isGuiRelevant(preset)}
 
 
-class PanelizeDialog(wx.Dialog):
+class PanelizeDialog(wx.Frame):
     def __init__(self, parent=None, board=None, preset=None, onClose=None):
-        wx.Dialog.__init__(
-            self, parent, title=f'拼板 (版本 {kikit.__version__})',
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
-        self.Bind(wx.EVT_CLOSE, self.OnClose, id=self.GetId())
+        wx.Frame.__init__(
+            self, parent, title=_tr(f"Panelize (v{kikit.__version__})",
+                                    f"拼板 (版本 {kikit.__version__})"),
+            style=wx.DEFAULT_FRAME_STYLE)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
         self.board = board
         self.dirty = False
@@ -364,27 +370,33 @@ class PanelizeDialog(wx.Dialog):
 
         topMostBoxSizer = wx.BoxSizer(wx.VERTICAL)
 
-        middleSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.splitter = wx.SplitterWindow(self, wx.ID_ANY, style=wx.SP_LIVE_UPDATE)
+        self.splitter.SetMinimumPaneSize(200)
 
         maxDisplayArea = wx.Display().GetClientArea()
         self.maxDialogSize = wx.Size(
             min(500, maxDisplayArea.Width),
             min(800, maxDisplayArea.Height - 200))
 
+        leftPanel = wx.Panel(self.splitter)
+        leftSizer = wx.BoxSizer(wx.VERTICAL)
         self.scrollWindow = wx.ScrolledWindow(
-            self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.VSCROLL)
-        self.scrollWindow.SetSizeHints(wx.Size(480, 400), wx.Size(self.maxDialogSize.width, -1))
+            leftPanel, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.VSCROLL)
         self.scrollWindow.SetScrollRate(5, 5)
         self._buildSections(self.scrollWindow)
-        middleSizer.Add(self.scrollWindow, 1, wx.EXPAND | wx.ALL, 5)
+        leftSizer.Add(self.scrollWindow, 1, wx.EXPAND)
+        leftPanel.SetSizer(leftSizer)
 
-        self._buildOutputSections(middleSizer)
+        rightPanel = wx.Panel(self.splitter)
+        self._buildOutputSections(rightPanel)
 
-        topMostBoxSizer.Add(middleSizer, 1, wx.EXPAND | wx.ALL, 5)
+        self.splitter.SplitVertically(leftPanel, rightPanel, 480)
+
+        topMostBoxSizer.Add(self.splitter, 1, wx.EXPAND | wx.ALL, 5)
         self._buildBottomButtons(topMostBoxSizer)
 
         self.SetSizer(topMostBoxSizer)
-        self.SetInitialSize(wx.Size(800, 600))
+        self.SetInitialSize(wx.Size(900, 600))
         self.populateInitialValue(preset)
         self.buildOutputSections()
         self.showOnlyRelevantFields()
@@ -394,14 +406,14 @@ class PanelizeDialog(wx.Dialog):
             self.SetBackgroundColour( wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND))
 
 
-    def _buildOutputSections(self, sizer):
+    def _buildOutputSections(self, parent):
         internalSizer = wx.BoxSizer(wx.VERTICAL)
 
-        cliLabel = wx.StaticText(self, label="KiKit CLI 命令：",
+        cliLabel = wx.StaticText(parent, label=_tr("KiKit CLI command:", "KiKit CLI 命令："),
                                  size=wx.DefaultSize, style=wx.ALIGN_LEFT)
         internalSizer.Add(cliLabel, 0, wx.EXPAND | wx.ALL, 2)
 
-        self.platformSelector = wx.Choice(self, wx.ID_ANY, wx.DefaultPosition,
+        self.platformSelector = wx.Choice(parent, wx.ID_ANY, wx.DefaultPosition,
             wx.DefaultSize, PLATFORMS, 0)
         if os.name == "nt":
             self.platformSelector.SetSelection(PLATFORMS.index("Windows"))
@@ -411,37 +423,31 @@ class PanelizeDialog(wx.Dialog):
         internalSizer.Add(self.platformSelector, 0, wx.EXPAND | wx.ALL, 2 )
 
         self.kikitCmdWidget = wx.TextCtrl(
-            self, wx.ID_ANY, "KiKit 命令", wx.DefaultPosition, wx.DefaultSize,
+            parent, wx.ID_ANY, _tr("KiKit command", "KiKit 命令"), wx.DefaultPosition, wx.DefaultSize,
             wx.TE_MULTILINE | wx.TE_READONLY)
-        self.kikitCmdWidget.SetSizeHints(
-            wx.Size(self.maxDialogSize.width,
-                    self.maxDialogSize.height // 2),
-            wx.Size(self.maxDialogSize.width, -1))
         cmdFont = self.kikitCmdWidget.GetFont()
         cmdFont.SetFamily(wx.FONTFAMILY_TELETYPE)
         self.kikitCmdWidget.SetFont(cmdFont)
-        internalSizer.Add(self.kikitCmdWidget, 0, wx.EXPAND | wx.ALL, 2)
+        internalSizer.Add(self.kikitCmdWidget, 1, wx.EXPAND | wx.ALL, 2)
 
-        jsonLabel = wx.StaticText(self, label="KiKit JSON 配置（仅包含已变更的键）：",
+        jsonLabel = wx.StaticText(parent, label=_tr("KiKit JSON configuration (only changed keys):",
+                                                     "KiKit JSON 配置（仅包含已变更的键）："),
                                   size=wx.DefaultSize, style=wx.ALIGN_LEFT)
         internalSizer.Add(jsonLabel, 0, wx.EXPAND | wx.ALL, 2)
 
         self.kikitJsonWidget = wx.TextCtrl(
-            self, wx.ID_ANY, "KiKit JSON", wx.DefaultPosition, wx.DefaultSize,
+            parent, wx.ID_ANY, _tr("KiKit JSON", "KiKit JSON"), wx.DefaultPosition, wx.DefaultSize,
             wx.TE_MULTILINE | wx.TE_READONLY)
-        self.kikitJsonWidget.SetSizeHints(
-            wx.Size(self.maxDialogSize.width,
-                    self.maxDialogSize.height // 2),
-            wx.Size(self.maxDialogSize.width, -1))
         cmdFont = self.kikitJsonWidget.GetFont()
         cmdFont.SetFamily(wx.FONTFAMILY_TELETYPE)
         self.kikitJsonWidget.SetFont(cmdFont)
-        internalSizer.Add(self.kikitJsonWidget, 0, wx.EXPAND | wx.ALL, 2)
+        internalSizer.Add(self.kikitJsonWidget, 1, wx.EXPAND | wx.ALL, 2)
 
         ieButtonsSizer = wx.BoxSizer(wx.HORIZONTAL)
         ieButtonsSizer.Add((0, 0), 1, wx.EXPAND, 5)
 
-        self.importButton = wx.Button(self, wx.ID_ANY, u"导入 JSON 配置",
+        self.importButton = wx.Button(parent, wx.ID_ANY,
+            _tr("Import JSON", "导入 JSON 配置"),
             wx.DefaultPosition, wx.DefaultSize, 0)
         try:
             self.importButton.SetBitmap(wx.BitmapBundle(wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN)))
@@ -450,18 +456,19 @@ class PanelizeDialog(wx.Dialog):
         ieButtonsSizer.Add(self.importButton, 0, wx.ALL, 5)
         self.importButton.Bind(wx.EVT_BUTTON, self.onImport)
 
-        self.exportButton = wx.Button(self, wx.ID_ANY, u"导出 JSON 配置",
+        self.exportButton = wx.Button(parent, wx.ID_ANY,
+            _tr("Export JSON", "导出 JSON 配置"),
             wx.DefaultPosition, wx.DefaultSize, 0)
         try:
             self.exportButton.SetBitmap(wx.BitmapBundle(wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE)))
         except:
-            self.exportButton.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE))
+            self.exportButton.SetBitmap(wx.BitmapBundle(wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE)))
         ieButtonsSizer.Add(self.exportButton, 0, wx.ALL, 5)
         self.exportButton.Bind(wx.EVT_BUTTON, self.onExport)
 
-        internalSizer.Add(ieButtonsSizer, 1, wx.EXPAND, 5)
+        internalSizer.Add(ieButtonsSizer, 0, wx.EXPAND, 5)
 
-        sizer.Add(internalSizer, 0, wx.EXPAND | wx.ALL, 2)
+        parent.SetSizer(internalSizer)
 
     def _buildSections(self, parentWindow):
         sectionsSizer = wx.BoxSizer(wx.VERTICAL)
@@ -488,10 +495,10 @@ class PanelizeDialog(wx.Dialog):
 
     def _buildBottomButtons(self, parentSizer):
         button_box = wx.BoxSizer(wx.HORIZONTAL)
-        closeButton = wx.Button(self, label='关闭')
+        closeButton = wx.Button(self, label=_tr("Close", "关闭"))
         self.Bind(wx.EVT_BUTTON, self.OnClose, id=closeButton.GetId())
         button_box.Add(closeButton, 1, wx.RIGHT, 10)
-        self.okButton = wx.Button(self, label='拼板')
+        self.okButton = wx.Button(self, label=_tr("Panelize", "拼板"))
         self.Bind(wx.EVT_BUTTON, self.OnPanelize, id=self.okButton.GetId())
         button_box.Add(self.okButton, 1)
 

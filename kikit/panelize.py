@@ -1742,6 +1742,8 @@ class Panel:
                 self.reportError(toKiCADPoint(cut.coords[0]), message)
                 continue
             cut = cut.simplify(1).parallel_offset(offset, "left")
+            if cut.is_empty or len(cut.coords) < 2:
+                continue
             start = roundPoint(cut.coords[0])
             end = roundPoint(cut.coords[-1])
             if start.x == end.x or (abs(start.x - end.x) <= fromMm(0.5) and boundCurves):
